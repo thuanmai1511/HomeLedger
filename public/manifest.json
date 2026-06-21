@@ -1,0 +1,17 @@
+{
+  "name": "HomeLedger - Quản lý chi tiêu gia đình",
+  "short_name": "HomeLedger",
+  "description": "Ứng dụng quản lý chi tiêu gia đình hiện đại",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B132B",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
