@@ -329,7 +329,7 @@ export default function HuiView() {
                 return (
                   <div key={roundNum} className={`${styles.roundCard} glass-card ${isCompleted ? styles.roundCompleted : ''}`} style={{ padding: '14px 18px' }}>
                     <div className={styles.roundHeaderRow}>
-                      <span className={styles.roundBadge}>Kỳ thứ {roundNum}</span>
+                      <span className={styles.roundBadge}>Kỳ {roundNum}</span>
                       
                       {isCompleted ? (
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>

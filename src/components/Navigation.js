@@ -63,7 +63,12 @@ export default function Navigation({ activeTab, setActiveTab, onOpenAddTransacti
       <aside className={`${styles.sidebar} glass-card`}>
         <div className={styles.brand}>
           <div className={styles.logoIcon}>
-            <Home size={22} color="var(--primary)" />
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              <circle cx="13" cy="9" r="2.5" />
+              <path d="M13 11.5v4.5" />
+            </svg>
           </div>
           <span className={styles.brandName}>HomeLedger</span>
         </div>
