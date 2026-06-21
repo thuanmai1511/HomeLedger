@@ -80,7 +80,11 @@ export default function Home() {
 
   return (
     <div className={styles.appContainer}>
-      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navigation 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onOpenAddTransaction={handleOpenAdd} 
+      />
       
       <main className={styles.mainContent}>
         <div className={styles.contentWrapper}>

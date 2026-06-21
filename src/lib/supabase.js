@@ -3,8 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-console.log("DEBUG ENV URL:", supabaseUrl);
-console.log("DEBUG ENV KEY:", supabaseAnonKey ? "Tồn tại (độ dài: " + supabaseAnonKey.length + ")" : "Không tồn tại");
+console.log("DEBUG ENV URL:", JSON.stringify(supabaseUrl));
+console.log("DEBUG ENV KEY:", supabaseAnonKey ? `Tồn tại (độ dài: ${supabaseAnonKey.length}) - ${JSON.stringify(supabaseAnonKey)}` : "Không tồn tại");
+
 
 // Check if these variables are initialized and not placeholder values
 const isConfigured = 
