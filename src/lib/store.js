@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from './supabase';
 
 const StoreContext = createContext();
 
@@ -58,7 +59,6 @@ const INITIAL_TRANSACTIONS = [
 ];
 
 export function StoreProvider({ children }) {
-  // Always initialize with SSR defaults to prevent hydration mismatch
   const [appState, setAppState] = useState({
     members: INITIAL_MEMBERS,
     categories: INITIAL_CATEGORIES,
@@ -71,16 +71,83 @@ export function StoreProvider({ children }) {
   
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Synchronize and load actual client storage data on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    async function loadData() {
+      if (supabase) {
+        try {
+          const [
+            resMembers,
+            resCategories,
+            resTransactions,
+            resGoals,
+            resRecurring,
+            resDebts
+          ] = await Promise.all([
+            supabase.from('members').select('*'),
+            supabase.from('categories').select('*'),
+            supabase.from('transactions').select('*').order('date', { ascending: false }),
+            supabase.from('goals').select('*'),
+            supabase.from('recurring').select('*'),
+            supabase.from('debts').select('*')
+          ]);
+
+          if (resMembers.error) throw resMembers.error;
+
+          let fetchedMembers = resMembers.data || [];
+          let fetchedCategories = resCategories.data || [];
+          let fetchedTransactions = resTransactions.data || [];
+          let fetchedGoals = resGoals.data || [];
+          let fetchedRecurring = resRecurring.data || [];
+          let fetchedDebts = resDebts.data || [];
+
+          if (fetchedMembers.length === 0 && fetchedCategories.length === 0) {
+            console.log("Database trống, đang khởi tạo dữ liệu mẫu lên Supabase...");
+            await Promise.all([
+              supabase.from('members').insert(INITIAL_MEMBERS),
+              supabase.from('categories').insert(INITIAL_CATEGORIES),
+              supabase.from('goals').insert(INITIAL_GOALS),
+              supabase.from('recurring').insert(INITIAL_RECURRING),
+              supabase.from('debts').insert(INITIAL_DEBTS),
+              supabase.from('transactions').insert(INITIAL_TRANSACTIONS)
+            ]);
+            fetchedMembers = INITIAL_MEMBERS;
+            fetchedCategories = INITIAL_CATEGORIES;
+            fetchedTransactions = INITIAL_TRANSACTIONS;
+            fetchedGoals = INITIAL_GOALS;
+            fetchedRecurring = INITIAL_RECURRING;
+            fetchedDebts = INITIAL_DEBTS;
+          }
+
+          const savedTheme = localStorage.getItem('hl_theme') || 'dark';
+          document.documentElement.setAttribute('data-theme', savedTheme);
+
+          setAppState({
+            members: fetchedMembers,
+            categories: fetchedCategories,
+            transactions: fetchedTransactions,
+            goals: fetchedGoals,
+            recurring: fetchedRecurring,
+            debts: fetchedDebts,
+            theme: savedTheme
+          });
+          setIsLoaded(true);
+        } catch (error) {
+          console.error("Lỗi kết nối Supabase, tự động chuyển về Local Storage:", error);
+          loadFromLocalStorage();
+        }
+      } else {
+        loadFromLocalStorage();
+      }
+    }
+
+    function loadFromLocalStorage() {
       const savedMembers = localStorage.getItem('hl_members');
       const savedCategories = localStorage.getItem('hl_categories');
       const savedTransactions = localStorage.getItem('hl_transactions');
       const savedGoals = localStorage.getItem('hl_goals');
       const savedRecurring = localStorage.getItem('hl_recurring');
       const savedDebts = localStorage.getItem('hl_debts');
-      const savedTheme = localStorage.getItem('hl_theme');
+      const savedTheme = localStorage.getItem('hl_theme') || 'dark';
 
       const nextMembers = savedMembers ? JSON.parse(savedMembers) : INITIAL_MEMBERS;
       const nextCategories = savedCategories ? JSON.parse(savedCategories) : INITIAL_CATEGORIES;
@@ -88,7 +155,6 @@ export function StoreProvider({ children }) {
       const nextGoals = savedGoals ? JSON.parse(savedGoals) : INITIAL_GOALS;
       const nextRecurring = savedRecurring ? JSON.parse(savedRecurring) : INITIAL_RECURRING;
       const nextDebts = savedDebts ? JSON.parse(savedDebts) : INITIAL_DEBTS;
-      const nextTheme = savedTheme || 'dark';
 
       if (!savedMembers) localStorage.setItem('hl_members', JSON.stringify(INITIAL_MEMBERS));
       if (!savedCategories) localStorage.setItem('hl_categories', JSON.stringify(INITIAL_CATEGORIES));
@@ -96,11 +162,10 @@ export function StoreProvider({ children }) {
       if (!savedGoals) localStorage.setItem('hl_goals', JSON.stringify(INITIAL_GOALS));
       if (!savedRecurring) localStorage.setItem('hl_recurring', JSON.stringify(INITIAL_RECURRING));
       if (!savedDebts) localStorage.setItem('hl_debts', JSON.stringify(INITIAL_DEBTS));
-      if (!savedTheme) localStorage.setItem('hl_theme', nextTheme);
+      if (!savedTheme) localStorage.setItem('hl_theme', savedTheme);
 
-      document.documentElement.setAttribute('data-theme', nextTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
       
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAppState({
         members: nextMembers,
         categories: nextCategories,
@@ -108,10 +173,12 @@ export function StoreProvider({ children }) {
         goals: nextGoals,
         recurring: nextRecurring,
         debts: nextDebts,
-        theme: nextTheme
+        theme: savedTheme
       });
       setIsLoaded(true);
     }
+
+    loadData();
   }, []);
 
   const toggleTheme = () => {
@@ -123,115 +190,180 @@ export function StoreProvider({ children }) {
     });
   };
 
-  // 1. Transactions Actions
-  const addTransaction = (t) => {
+  const addTransaction = async (t) => {
     const newT = { ...t, id: 't-' + Date.now() };
     setAppState(prev => {
       const updated = [newT, ...prev.transactions];
-      localStorage.setItem('hl_transactions', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_transactions', JSON.stringify(updated));
       return { ...prev, transactions: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('transactions').insert(newT);
+      if (error) console.error("Lỗi khi thêm giao dịch vào Supabase:", error);
+    }
   };
 
-  const updateTransaction = (updatedT) => {
+  const updateTransaction = async (updatedT) => {
     setAppState(prev => {
       const updated = prev.transactions.map(t => t.id === updatedT.id ? updatedT : t);
-      localStorage.setItem('hl_transactions', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_transactions', JSON.stringify(updated));
       return { ...prev, transactions: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('transactions').update(updatedT).eq('id', updatedT.id);
+      if (error) console.error("Lỗi khi cập nhật giao dịch trên Supabase:", error);
+    }
   };
 
-  const deleteTransaction = (id) => {
+  const deleteTransaction = async (id) => {
     setAppState(prev => {
       const updated = prev.transactions.filter(t => t.id !== id);
-      localStorage.setItem('hl_transactions', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_transactions', JSON.stringify(updated));
       return { ...prev, transactions: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('transactions').delete().eq('id', id);
+      if (error) console.error("Lỗi khi xóa giao dịch trên Supabase:", error);
+    }
   };
 
-  // 2. Budget Actions
-  const updateCategoryBudget = (catId, newBudget) => {
+  const updateCategoryBudget = async (catId, newBudget) => {
+    const budgetVal = Number(newBudget);
     setAppState(prev => {
-      const updated = prev.categories.map(c => c.id === catId ? { ...c, budget: Number(newBudget) } : c);
-      localStorage.setItem('hl_categories', JSON.stringify(updated));
+      const updated = prev.categories.map(c => c.id === catId ? { ...c, budget: budgetVal } : c);
+      if (!supabase) localStorage.setItem('hl_categories', JSON.stringify(updated));
       return { ...prev, categories: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('categories').update({ budget: budgetVal }).eq('id', catId);
+      if (error) console.error("Lỗi khi cập nhật ngân sách trên Supabase:", error);
+    }
   };
 
-  // 3. Member Actions
-  const addMember = (m) => {
+  const addMember = async (m) => {
     const newM = { ...m, id: 'm-' + Date.now() };
     setAppState(prev => {
       const updated = [...prev.members, newM];
-      localStorage.setItem('hl_members', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_members', JSON.stringify(updated));
       return { ...prev, members: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('members').insert(newM);
+      if (error) console.error("Lỗi khi thêm thành viên vào Supabase:", error);
+    }
   };
 
-  const updateMember = (updatedM) => {
+  const updateMember = async (updatedM) => {
     setAppState(prev => {
       const updated = prev.members.map(m => m.id === updatedM.id ? updatedM : m);
-      localStorage.setItem('hl_members', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_members', JSON.stringify(updated));
       return { ...prev, members: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('members').update(updatedM).eq('id', updatedM.id);
+      if (error) console.error("Lỗi khi cập nhật thành viên trên Supabase:", error);
+    }
   };
 
-  const deleteMember = (id) => {
+  const deleteMember = async (id) => {
+    let canDelete = true;
     setAppState(prev => {
-      if (prev.members.length <= 1) return prev;
+      if (prev.members.length <= 1) {
+        canDelete = false;
+        return prev;
+      }
       const updated = prev.members.filter(m => m.id !== id);
-      localStorage.setItem('hl_members', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_members', JSON.stringify(updated));
       return { ...prev, members: updated };
     });
+
+    if (supabase && canDelete) {
+      const { error } = await supabase.from('members').delete().eq('id', id);
+      if (error) console.error("Lỗi khi xóa thành viên trên Supabase:", error);
+    }
   };
 
-  // 4. Savings Goals Actions
-  const addGoal = (g) => {
+  const addGoal = async (g) => {
     const newG = { ...g, id: 'g-' + Date.now(), current: Number(g.current) || 0, target: Number(g.target) };
     setAppState(prev => {
       const updated = [...prev.goals, newG];
-      localStorage.setItem('hl_goals', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_goals', JSON.stringify(updated));
       return { ...prev, goals: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('goals').insert(newG);
+      if (error) console.error("Lỗi khi thêm mục tiêu vào Supabase:", error);
+    }
   };
 
-  const updateGoal = (updatedG) => {
+  const updateGoal = async (updatedG) => {
+    const formatted = { ...updatedG, target: Number(updatedG.target), current: Number(updatedG.current) };
     setAppState(prev => {
-      const updated = prev.goals.map(g => g.id === updatedG.id ? { ...updatedG, target: Number(updatedG.target), current: Number(updatedG.current) } : g);
-      localStorage.setItem('hl_goals', JSON.stringify(updated));
+      const updated = prev.goals.map(g => g.id === updatedG.id ? formatted : g);
+      if (!supabase) localStorage.setItem('hl_goals', JSON.stringify(updated));
       return { ...prev, goals: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('goals').update(formatted).eq('id', updatedG.id);
+      if (error) console.error("Lỗi khi cập nhật mục tiêu trên Supabase:", error);
+    }
   };
 
-  const deleteGoal = (id) => {
+  const deleteGoal = async (id) => {
     setAppState(prev => {
       const updated = prev.goals.filter(g => g.id !== id);
-      localStorage.setItem('hl_goals', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_goals', JSON.stringify(updated));
       return { ...prev, goals: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('goals').delete().eq('id', id);
+      if (error) console.error("Lỗi khi xóa mục tiêu trên Supabase:", error);
+    }
   };
 
-  // 5. Recurring Expenses Actions
-  const addRecurring = (rec) => {
+  const addRecurring = async (rec) => {
     const newRec = { ...rec, id: 'rec-' + Date.now(), amount: Number(rec.amount) };
     setAppState(prev => {
       const updated = [...prev.recurring, newRec];
-      localStorage.setItem('hl_recurring', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_recurring', JSON.stringify(updated));
       return { ...prev, recurring: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('recurring').insert(newRec);
+      if (error) console.error("Lỗi khi thêm chi tiêu định kỳ vào Supabase:", error);
+    }
   };
 
-  const deleteRecurring = (id) => {
+  const deleteRecurring = async (id) => {
     setAppState(prev => {
       const updated = prev.recurring.filter(r => r.id !== id);
-      localStorage.setItem('hl_recurring', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_recurring', JSON.stringify(updated));
       return { ...prev, recurring: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('recurring').delete().eq('id', id);
+      if (error) console.error("Lỗi khi xóa chi tiêu định kỳ trên Supabase:", error);
+    }
   };
 
-  const triggerRecurringExpense = (rec) => {
+  const triggerRecurringExpense = async (rec) => {
+    let newT = null;
+    let updatedRecurring = [];
+    let updatedTransactions = [];
+
     setAppState(prev => {
-      const newT = {
+      newT = {
         id: 't-' + Date.now(),
         description: `[Định kỳ] ${rec.name}`,
         amount: rec.amount,
@@ -249,11 +381,13 @@ export function StoreProvider({ children }) {
       nextDate.setMonth(nextDate.getMonth() + 1);
       const formattedNextDate = nextDate.toISOString().split('T')[0];
 
-      const updatedRecurring = prev.recurring.map(r => r.id === rec.id ? { ...r, nextDue: formattedNextDate } : r);
-      const updatedTransactions = [newT, ...prev.transactions];
+      updatedRecurring = prev.recurring.map(r => r.id === rec.id ? { ...r, nextDue: formattedNextDate } : r);
+      updatedTransactions = [newT, ...prev.transactions];
 
-      localStorage.setItem('hl_recurring', JSON.stringify(updatedRecurring));
-      localStorage.setItem('hl_transactions', JSON.stringify(updatedTransactions));
+      if (!supabase) {
+        localStorage.setItem('hl_recurring', JSON.stringify(updatedRecurring));
+        localStorage.setItem('hl_transactions', JSON.stringify(updatedTransactions));
+      }
 
       return {
         ...prev,
@@ -261,10 +395,23 @@ export function StoreProvider({ children }) {
         transactions: updatedTransactions
       };
     });
+
+    if (supabase) {
+      const nextDate = rec.nextDue ? new Date(rec.nextDue) : new Date();
+      if (isNaN(nextDate.getTime())) {
+        nextDate.setTime(Date.now());
+      }
+      nextDate.setMonth(nextDate.getMonth() + 1);
+      const formattedNextDate = nextDate.toISOString().split('T')[0];
+
+      await Promise.all([
+        supabase.from('recurring').update({ nextDue: formattedNextDate }).eq('id', rec.id),
+        supabase.from('transactions').insert(newT)
+      ]);
+    }
   };
 
-  // 6. Debts Actions
-  const addDebt = (d) => {
+  const addDebt = async (d) => {
     const newD = { 
       ...d, 
       id: 'd-' + Date.now(), 
@@ -274,24 +421,38 @@ export function StoreProvider({ children }) {
     };
     setAppState(prev => {
       const updated = [...prev.debts, newD];
-      localStorage.setItem('hl_debts', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_debts', JSON.stringify(updated));
       return { ...prev, debts: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('debts').insert(newD);
+      if (error) console.error("Lỗi khi thêm khoản nợ vào Supabase:", error);
+    }
   };
 
-  const deleteDebt = (id) => {
+  const deleteDebt = async (id) => {
     setAppState(prev => {
       const updated = prev.debts.filter(d => d.id !== id);
-      localStorage.setItem('hl_debts', JSON.stringify(updated));
+      if (!supabase) localStorage.setItem('hl_debts', JSON.stringify(updated));
       return { ...prev, debts: updated };
     });
+
+    if (supabase) {
+      const { error } = await supabase.from('debts').delete().eq('id', id);
+      if (error) console.error("Lỗi khi xóa khoản nợ trên Supabase:", error);
+    }
   };
 
-  const payDebt = (id, amt, autoLog) => {
+  const payDebt = async (id, amt, autoLog) => {
+    let newT = null;
+    let targetDebtObj = null;
+
     setAppState(prev => {
       const targetDebt = prev.debts.find(d => d.id === id);
       if (!targetDebt) return prev;
 
+      targetDebtObj = targetDebt;
       const nextPaid = Number(targetDebt.paidAmount) + Number(amt);
       const completed = nextPaid >= targetDebt.amount;
 
@@ -301,11 +462,11 @@ export function StoreProvider({ children }) {
         status: completed ? 'completed' : 'active'
       } : d);
 
-      localStorage.setItem('hl_debts', JSON.stringify(updatedDebts));
+      if (!supabase) localStorage.setItem('hl_debts', JSON.stringify(updatedDebts));
 
       if (autoLog) {
         const isExpense = targetDebt.type === 'debt';
-        const newT = {
+        newT = {
           id: 't-' + Date.now(),
           description: isExpense ? `[Trả nợ] ${targetDebt.name}` : `[Thu hồi nợ] ${targetDebt.name}`,
           amount: Number(amt),
@@ -315,10 +476,8 @@ export function StoreProvider({ children }) {
           type: isExpense ? 'expense' : 'income',
           notes: isExpense ? `Thanh toán nợ cho ${targetDebt.name}` : `Thu hồi khoản cho ${targetDebt.name} vay`
         };
-
         const updatedTransactions = [newT, ...prev.transactions];
-        localStorage.setItem('hl_transactions', JSON.stringify(updatedTransactions));
-
+        if (!supabase) localStorage.setItem('hl_transactions', JSON.stringify(updatedTransactions));
         return {
           ...prev,
           debts: updatedDebts,
@@ -331,16 +490,53 @@ export function StoreProvider({ children }) {
         debts: updatedDebts
       };
     });
+
+    if (supabase && targetDebtObj) {
+      const nextPaid = Number(targetDebtObj.paidAmount) + Number(amt);
+      const completed = nextPaid >= targetDebtObj.amount;
+      
+      const dbPromises = [
+        supabase.from('debts').update({
+          paidAmount: nextPaid,
+          status: completed ? 'completed' : 'active'
+        }).eq('id', id)
+      ];
+
+      if (autoLog && newT) {
+        dbPromises.push(supabase.from('transactions').insert(newT));
+      }
+
+      await Promise.all(dbPromises);
+    }
   };
 
-  // 7. Reset & Import/Export Data
-  const resetAllData = () => {
-    localStorage.removeItem('hl_members');
-    localStorage.removeItem('hl_categories');
-    localStorage.removeItem('hl_transactions');
-    localStorage.removeItem('hl_goals');
-    localStorage.removeItem('hl_recurring');
-    localStorage.removeItem('hl_debts');
+  const resetAllData = async () => {
+    if (supabase) {
+      await Promise.all([
+        supabase.from('members').delete().neq('id', ''),
+        supabase.from('categories').delete().neq('id', ''),
+        supabase.from('transactions').delete().neq('id', ''),
+        supabase.from('goals').delete().neq('id', ''),
+        supabase.from('recurring').delete().neq('id', ''),
+        supabase.from('debts').delete().neq('id', '')
+      ]);
+
+      await Promise.all([
+        supabase.from('members').insert(INITIAL_MEMBERS),
+        supabase.from('categories').insert(INITIAL_CATEGORIES),
+        supabase.from('goals').insert(INITIAL_GOALS),
+        supabase.from('recurring').insert(INITIAL_RECURRING),
+        supabase.from('debts').insert(INITIAL_DEBTS),
+        supabase.from('transactions').insert(INITIAL_TRANSACTIONS)
+      ]);
+    } else {
+      localStorage.removeItem('hl_members');
+      localStorage.removeItem('hl_categories');
+      localStorage.removeItem('hl_transactions');
+      localStorage.removeItem('hl_goals');
+      localStorage.removeItem('hl_recurring');
+      localStorage.removeItem('hl_debts');
+    }
     
     setAppState({
       members: INITIAL_MEMBERS,
@@ -353,16 +549,32 @@ export function StoreProvider({ children }) {
     });
   };
 
-  const clearAllData = () => {
+  const clearAllData = async () => {
     const defaultMember = [{ id: 'm-1', name: 'Thành viên 1', role: 'admin', color: '#3b82f6', avatar: '👨' }];
     const defaultCategories = INITIAL_CATEGORIES.map(c => ({ ...c, budget: 0 }));
 
-    localStorage.setItem('hl_members', JSON.stringify(defaultMember));
-    localStorage.setItem('hl_categories', JSON.stringify(defaultCategories));
-    localStorage.removeItem('hl_transactions');
-    localStorage.removeItem('hl_goals');
-    localStorage.removeItem('hl_recurring');
-    localStorage.removeItem('hl_debts');
+    if (supabase) {
+      await Promise.all([
+        supabase.from('members').delete().neq('id', ''),
+        supabase.from('categories').delete().neq('id', ''),
+        supabase.from('transactions').delete().neq('id', ''),
+        supabase.from('goals').delete().neq('id', ''),
+        supabase.from('recurring').delete().neq('id', ''),
+        supabase.from('debts').delete().neq('id', '')
+      ]);
+
+      await Promise.all([
+        supabase.from('members').insert(defaultMember),
+        supabase.from('categories').insert(defaultCategories)
+      ]);
+    } else {
+      localStorage.setItem('hl_members', JSON.stringify(defaultMember));
+      localStorage.setItem('hl_categories', JSON.stringify(defaultCategories));
+      localStorage.removeItem('hl_transactions');
+      localStorage.removeItem('hl_goals');
+      localStorage.removeItem('hl_recurring');
+      localStorage.removeItem('hl_debts');
+    }
     
     setAppState({
       members: defaultMember,
@@ -375,36 +587,66 @@ export function StoreProvider({ children }) {
     });
   };
 
-  const importAllData = (jsonString) => {
+  const importAllData = async (jsonString) => {
     try {
       const data = JSON.parse(jsonString);
       const nextState = { ...appState };
       
+      const promises = [];
+
       if (data.members) {
         nextState.members = data.members;
-        localStorage.setItem('hl_members', JSON.stringify(data.members));
+        if (supabase) {
+          promises.push(supabase.from('members').delete().neq('id', '').then(() => supabase.from('members').insert(data.members)));
+        } else {
+          localStorage.setItem('hl_members', JSON.stringify(data.members));
+        }
       }
       if (data.categories) {
         nextState.categories = data.categories;
-        localStorage.setItem('hl_categories', JSON.stringify(data.categories));
+        if (supabase) {
+          promises.push(supabase.from('categories').delete().neq('id', '').then(() => supabase.from('categories').insert(data.categories)));
+        } else {
+          localStorage.setItem('hl_categories', JSON.stringify(data.categories));
+        }
       }
       if (data.transactions) {
         nextState.transactions = data.transactions;
-        localStorage.setItem('hl_transactions', JSON.stringify(data.transactions));
+        if (supabase) {
+          promises.push(supabase.from('transactions').delete().neq('id', '').then(() => supabase.from('transactions').insert(data.transactions)));
+        } else {
+          localStorage.setItem('hl_transactions', JSON.stringify(data.transactions));
+        }
       }
       if (data.goals) {
         nextState.goals = data.goals;
-        localStorage.setItem('hl_goals', JSON.stringify(data.goals));
+        if (supabase) {
+          promises.push(supabase.from('goals').delete().neq('id', '').then(() => supabase.from('goals').insert(data.goals)));
+        } else {
+          localStorage.setItem('hl_goals', JSON.stringify(data.goals));
+        }
       }
       if (data.recurring) {
         nextState.recurring = data.recurring;
-        localStorage.setItem('hl_recurring', JSON.stringify(data.recurring));
+        if (supabase) {
+          promises.push(supabase.from('recurring').delete().neq('id', '').then(() => supabase.from('recurring').insert(data.recurring)));
+        } else {
+          localStorage.setItem('hl_recurring', JSON.stringify(data.recurring));
+        }
       }
       if (data.debts) {
         nextState.debts = data.debts;
-        localStorage.setItem('hl_debts', JSON.stringify(data.debts));
+        if (supabase) {
+          promises.push(supabase.from('debts').delete().neq('id', '').then(() => supabase.from('debts').insert(data.debts)));
+        } else {
+          localStorage.setItem('hl_debts', JSON.stringify(data.debts));
+        }
       }
       
+      if (supabase && promises.length > 0) {
+        await Promise.all(promises);
+      }
+
       setAppState(nextState);
       return { success: true };
     } catch (e) {
