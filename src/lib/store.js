@@ -92,6 +92,11 @@ export function StoreProvider({ children }) {
           ]);
 
           if (resMembers.error) throw resMembers.error;
+          if (resCategories.error) throw resCategories.error;
+          if (resTransactions.error) throw resTransactions.error;
+          if (resGoals.error) throw resGoals.error;
+          if (resRecurring.error) throw resRecurring.error;
+          if (resDebts.error) throw resDebts.error;
 
           let fetchedMembers = resMembers.data || [];
           let fetchedCategories = resCategories.data || [];
@@ -132,50 +137,13 @@ export function StoreProvider({ children }) {
           });
           setIsLoaded(true);
         } catch (error) {
-          console.error("Lỗi kết nối Supabase, tự động chuyển về Local Storage:", error);
-          loadFromLocalStorage();
+          console.error("Lỗi nghiêm trọng khi tải dữ liệu từ Supabase:", error);
+          setIsLoaded(true);
         }
       } else {
-        loadFromLocalStorage();
+        console.error("Supabase chưa được cấu hình. Vui lòng kiểm tra file .env.local.");
+        setIsLoaded(true);
       }
-    }
-
-    function loadFromLocalStorage() {
-      const savedMembers = localStorage.getItem('hl_members');
-      const savedCategories = localStorage.getItem('hl_categories');
-      const savedTransactions = localStorage.getItem('hl_transactions');
-      const savedGoals = localStorage.getItem('hl_goals');
-      const savedRecurring = localStorage.getItem('hl_recurring');
-      const savedDebts = localStorage.getItem('hl_debts');
-      const savedTheme = localStorage.getItem('hl_theme') || 'dark';
-
-      const nextMembers = savedMembers ? JSON.parse(savedMembers) : INITIAL_MEMBERS;
-      const nextCategories = savedCategories ? JSON.parse(savedCategories) : INITIAL_CATEGORIES;
-      const nextTransactions = savedTransactions ? JSON.parse(savedTransactions) : INITIAL_TRANSACTIONS;
-      const nextGoals = savedGoals ? JSON.parse(savedGoals) : INITIAL_GOALS;
-      const nextRecurring = savedRecurring ? JSON.parse(savedRecurring) : INITIAL_RECURRING;
-      const nextDebts = savedDebts ? JSON.parse(savedDebts) : INITIAL_DEBTS;
-
-      if (!savedMembers) localStorage.setItem('hl_members', JSON.stringify(INITIAL_MEMBERS));
-      if (!savedCategories) localStorage.setItem('hl_categories', JSON.stringify(INITIAL_CATEGORIES));
-      if (!savedTransactions) localStorage.setItem('hl_transactions', JSON.stringify(INITIAL_TRANSACTIONS));
-      if (!savedGoals) localStorage.setItem('hl_goals', JSON.stringify(INITIAL_GOALS));
-      if (!savedRecurring) localStorage.setItem('hl_recurring', JSON.stringify(INITIAL_RECURRING));
-      if (!savedDebts) localStorage.setItem('hl_debts', JSON.stringify(INITIAL_DEBTS));
-      if (!savedTheme) localStorage.setItem('hl_theme', savedTheme);
-
-      document.documentElement.setAttribute('data-theme', savedTheme);
-      
-      setAppState({
-        members: nextMembers,
-        categories: nextCategories,
-        transactions: nextTransactions,
-        goals: nextGoals,
-        recurring: nextRecurring,
-        debts: nextDebts,
-        theme: savedTheme
-      });
-      setIsLoaded(true);
     }
 
     loadData();
@@ -192,11 +160,7 @@ export function StoreProvider({ children }) {
 
   const addTransaction = async (t) => {
     const newT = { ...t, id: 't-' + Date.now() };
-    setAppState(prev => {
-      const updated = [newT, ...prev.transactions];
-      if (!supabase) localStorage.setItem('hl_transactions', JSON.stringify(updated));
-      return { ...prev, transactions: updated };
-    });
+    setAppState(prev => ({ ...prev, transactions: [newT, ...prev.transactions] }));
 
     if (supabase) {
       const { error } = await supabase.from('transactions').insert(newT);
@@ -205,11 +169,10 @@ export function StoreProvider({ children }) {
   };
 
   const updateTransaction = async (updatedT) => {
-    setAppState(prev => {
-      const updated = prev.transactions.map(t => t.id === updatedT.id ? updatedT : t);
-      if (!supabase) localStorage.setItem('hl_transactions', JSON.stringify(updated));
-      return { ...prev, transactions: updated };
-    });
+    setAppState(prev => ({
+      ...prev,
+      transactions: prev.transactions.map(t => t.id === updatedT.id ? updatedT : t)
+    }));
 
     if (supabase) {
       const { error } = await supabase.from('transactions').update(updatedT).eq('id', updatedT.id);
@@ -218,11 +181,10 @@ export function StoreProvider({ children }) {
   };
 
   const deleteTransaction = async (id) => {
-    setAppState(prev => {
-      const updated = prev.transactions.filter(t => t.id !== id);
-      if (!supabase) localStorage.setItem('hl_transactions', JSON.stringify(updated));
-      return { ...prev, transactions: updated };
-    });
+    setAppState(prev => ({
+      ...prev,
+      transactions: prev.transactions.filter(t => t.id !== id)
+    }));
 
     if (supabase) {
       const { error } = await supabase.from('transactions').delete().eq('id', id);
@@ -232,11 +194,10 @@ export function StoreProvider({ children }) {
 
   const updateCategoryBudget = async (catId, newBudget) => {
     const budgetVal = Number(newBudget);
-    setAppState(prev => {
-      const updated = prev.categories.map(c => c.id === catId ? { ...c, budget: budgetVal } : c);
-      if (!supabase) localStorage.setItem('hl_categories', JSON.stringify(updated));
-      return { ...prev, categories: updated };
-    });
+    setAppState(prev => ({
+      ...prev,
+      categories: prev.categories.map(c => c.id === catId ? { ...c, budget: budgetVal } : c)
+    }));
 
     if (supabase) {
       const { error } = await supabase.from('categories').update({ budget: budgetVal }).eq('id', catId);
@@ -246,11 +207,7 @@ export function StoreProvider({ children }) {
 
   const addMember = async (m) => {
     const newM = { ...m, id: 'm-' + Date.now() };
-    setAppState(prev => {
-      const updated = [...prev.members, newM];
-      if (!supabase) localStorage.setItem('hl_members', JSON.stringify(updated));
-      return { ...prev, members: updated };
-    });
+    setAppState(prev => ({ ...prev, members: [...prev.members, newM] }));
 
     if (supabase) {
       const { error } = await supabase.from('members').insert(newM);
@@ -259,11 +216,10 @@ export function StoreProvider({ children }) {
   };
 
   const updateMember = async (updatedM) => {
-    setAppState(prev => {
-      const updated = prev.members.map(m => m.id === updatedM.id ? updatedM : m);
-      if (!supabase) localStorage.setItem('hl_members', JSON.stringify(updated));
-      return { ...prev, members: updated };
-    });
+    setAppState(prev => ({
+      ...prev,
+      members: prev.members.map(m => m.id === updatedM.id ? updatedM : m)
+    }));
 
     if (supabase) {
       const { error } = await supabase.from('members').update(updatedM).eq('id', updatedM.id);
