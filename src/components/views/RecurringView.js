@@ -72,7 +72,7 @@ export default function RecurringView() {
           id="btn-toggle-add-recurring"
         >
           {showAddForm ? <X size={18} /> : <Plus size={18} />}
-          <span>{showAddForm ? 'Đóng' : 'Thêm định kỳ'}</span>
+          <span>{showAddForm ? 'Đóng' : 'Thêm mới'}</span>
         </button>
       </header>
 
@@ -171,7 +171,7 @@ export default function RecurringView() {
               className={styles.btnSubmit}
               id="btn-submit-add-recurring"
             >
-              Lưu hóa đơn định kỳ
+              Lưu
             </button>
           </form>
         </section>

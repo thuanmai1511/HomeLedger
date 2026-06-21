@@ -81,7 +81,7 @@ export default function MembersView() {
           id="btn-toggle-add-member"
         >
           {showAddForm ? <X size={18} /> : <Plus size={18} />}
-          <span>{showAddForm ? 'Đóng form' : 'Thêm thành viên'}</span>
+          <span>{showAddForm ? 'Đóng' : 'Thêm mới'}</span>
         </button>
       </header>
 
@@ -156,7 +156,7 @@ export default function MembersView() {
               className={styles.btnSubmit}
               id="btn-submit-add-member"
             >
-              Thêm vào gia đình
+              Lưu
             </button>
           </form>
         </section>

@@ -11,6 +11,7 @@ import SavingsView from '@/components/views/SavingsView';
 import RecurringView from '@/components/views/RecurringView';
 import SettingsView from '@/components/views/SettingsView';
 import DebtsView from '@/components/views/DebtsView';
+import HuiView from '@/components/views/HuiView';
 import TransactionModal from '@/components/TransactionModal';
 import styles from './page.module.css';
 
@@ -66,6 +67,8 @@ export default function Home() {
         return <RecurringView />;
       case 'debts':
         return <DebtsView />;
+      case 'huis':
+        return <HuiView />;
       case 'settings':
         return <SettingsView />;
       default:

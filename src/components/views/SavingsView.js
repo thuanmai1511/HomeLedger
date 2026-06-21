@@ -159,7 +159,7 @@ export default function SavingsView() {
               className={styles.btnSubmit}
               id="btn-submit-add-goal"
             >
-              Tạo mục tiêu
+              Lưu
             </button>
           </form>
         </section>
@@ -255,7 +255,7 @@ export default function SavingsView() {
                       id={`btn-open-fund-${g.id}`}
                     >
                       <Plus size={14} />
-                      <span>Nạp thêm quỹ</span>
+                      <span>Nạp tiền</span>
                     </button>
                   )
                 )}

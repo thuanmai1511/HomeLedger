@@ -37,8 +37,25 @@
   }
   .modalContent {
     max-height: 85vh;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-radius: 24px 24px 0 0;
     animation: slideUp 0.3s cubic-bezier(0.32, 0.94, 0.6, 1);
+    padding: 20px;
+  }
+  .formRow {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+  .formActions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .btnCancel, .btnSubmit {
+    width: 100%;
+    text-align: center;
+    padding: 12px 8px;
+    font-size: 0.95rem;
   }
 }
 

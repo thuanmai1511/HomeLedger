@@ -70,7 +70,7 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
       <div className={`${styles.modalContent} glass-card`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>
-            {editingTransaction ? 'Cập nhật giao dịch' : 'Ghi chép giao dịch mới'}
+            {editingTransaction ? 'Cập nhật giao dịch' : 'Thêm giao dịch'}
           </h3>
           <button onClick={onClose} className={styles.btnCloseModal}>
             <X size={20} />
@@ -86,14 +86,14 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
                 onClick={() => handleTypeChange('expense')}
                 className={`${styles.typeBtn} ${type === 'expense' ? styles.typeBtnActiveExpense : ''}`}
               >
-                Khoản Chi
+                Chi
               </button>
               <button
                 type="button"
                 onClick={() => handleTypeChange('income')}
                 className={`${styles.typeBtn} ${type === 'income' ? styles.typeBtnActiveIncome : ''}`}
               >
-                Thu Nhập
+                Thu
               </button>
             </div>
           </div>
@@ -118,11 +118,11 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
 
           {/* Description */}
           <div className={styles.formGroup}>
-            <label className={styles.inputLabel}>Nội dung mô tả</label>
+            <label className={styles.inputLabel}>Nội dung</label>
             <input 
               type="text"
               required
-              placeholder="Ví dụ: Mua sắm siêu thị, Đi xe bus..."
+              placeholder="Nhập nội dung chi tiêu..."
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               className={styles.modalInput}
@@ -145,7 +145,7 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
             </div>
 
             <div className={styles.formGroup}>
-              <label className={styles.inputLabel}>Người chi / nhận</label>
+              <label className={styles.inputLabel}>Thành viên</label>
               <select 
                 value={mId} 
                 onChange={(e) => setMId(e.target.value)}
@@ -162,7 +162,7 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
           {/* Category selector (Only if Expense) */}
           {type === 'expense' && (
             <div className={styles.formGroup}>
-              <label className={styles.inputLabel}>Danh mục chi</label>
+              <label className={styles.inputLabel}>Danh mục</label>
               <select 
                 value={cat} 
                 onChange={(e) => setCat(e.target.value)}
@@ -178,7 +178,7 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
 
           {/* Notes */}
           <div className={styles.formGroup}>
-            <label className={styles.inputLabel}>Ghi chú thêm</label>
+            <label className={styles.inputLabel}>Ghi chú</label>
             <textarea 
               placeholder="Nhập ghi chú (nếu có)..."
               value={notes}
@@ -195,14 +195,14 @@ export default function TransactionModal({ isOpen, onClose, editingTransaction }
               onClick={onClose}
               className={styles.btnCancel}
             >
-              Hủy bỏ
+              Hủy
             </button>
             <button 
               type="submit" 
               className={styles.btnSubmit}
               id="btn-submit-transaction"
             >
-              {editingTransaction ? 'Cập nhật' : 'Ghi chép'}
+              Lưu
             </button>
           </div>
         </form>

@@ -15,7 +15,8 @@ import {
   Coins,
   Plus,
   MoreHorizontal,
-  X
+  X,
+  Notebook
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import styles from './Navigation.module.css';
@@ -32,6 +33,7 @@ export default function Navigation({ activeTab, setActiveTab, onOpenAddTransacti
     { id: 'savings', label: 'Tiết kiệm', icon: Target },
     { id: 'recurring', label: 'Định kỳ', icon: CalendarClock },
     { id: 'debts', label: 'Khoản nợ', icon: Coins },
+    { id: 'huis', label: 'Dây Hụi', icon: Notebook },
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
 
@@ -49,6 +51,7 @@ export default function Navigation({ activeTab, setActiveTab, onOpenAddTransacti
     { id: 'savings', label: 'Tiết kiệm', icon: Target },
     { id: 'recurring', label: 'Định kỳ', icon: CalendarClock },
     { id: 'debts', label: 'Khoản nợ', icon: Coins },
+    { id: 'huis', label: 'Dây Hụi', icon: Notebook },
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
 

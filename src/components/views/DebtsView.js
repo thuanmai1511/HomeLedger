@@ -111,7 +111,7 @@ export default function DebtsView() {
           id="btn-toggle-add-debt"
         >
           {showAddForm ? <X size={18} /> : <Plus size={18} />}
-          <span>{showAddForm ? 'Đóng' : 'Thêm khoản nợ'}</span>
+          <span>{showAddForm ? 'Đóng' : 'Thêm mới'}</span>
         </button>
       </header>
 
@@ -223,7 +223,7 @@ export default function DebtsView() {
               className={styles.btnSubmit}
               id="btn-submit-add-debt"
             >
-              Tạo khoản nợ
+              Lưu
             </button>
           </form>
         </section>
@@ -330,7 +330,7 @@ export default function DebtsView() {
                       id={`btn-open-pay-${d.id}`}
                     >
                       <CreditCard size={14} style={{ marginRight: '6px' }} />
-                      <span>{isDebt ? 'Trả bớt nợ' : 'Thu hồi bớt nợ'}</span>
+                      <span>{isDebt ? 'Trả nợ' : 'Thu nợ'}</span>
                     </button>
                   )
                 )}

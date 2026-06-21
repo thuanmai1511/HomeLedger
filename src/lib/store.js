@@ -66,6 +66,7 @@ export function StoreProvider({ children }) {
     goals: INITIAL_GOALS,
     recurring: INITIAL_RECURRING,
     debts: INITIAL_DEBTS,
+    huis: [],
     theme: 'dark'
   });
   
@@ -81,14 +82,16 @@ export function StoreProvider({ children }) {
             resTransactions,
             resGoals,
             resRecurring,
-            resDebts
+            resDebts,
+            resHuis
           ] = await Promise.all([
             supabase.from('members').select('*'),
             supabase.from('categories').select('*'),
             supabase.from('transactions').select('*').order('date', { ascending: false }),
             supabase.from('goals').select('*'),
             supabase.from('recurring').select('*'),
-            supabase.from('debts').select('*')
+            supabase.from('debts').select('*'),
+            supabase.from('huis').select('*')
           ]);
 
           if (resMembers.error) throw resMembers.error;
@@ -97,6 +100,7 @@ export function StoreProvider({ children }) {
           if (resGoals.error) throw resGoals.error;
           if (resRecurring.error) throw resRecurring.error;
           if (resDebts.error) throw resDebts.error;
+          if (resHuis.error) throw resHuis.error;
 
           let fetchedMembers = resMembers.data || [];
           let fetchedCategories = resCategories.data || [];
@@ -104,6 +108,7 @@ export function StoreProvider({ children }) {
           let fetchedGoals = resGoals.data || [];
           let fetchedRecurring = resRecurring.data || [];
           let fetchedDebts = resDebts.data || [];
+          let fetchedHuis = resHuis.data || [];
 
           if (fetchedMembers.length === 0 && fetchedCategories.length === 0) {
             console.log("Database trống, đang khởi tạo dữ liệu mẫu lên Supabase...");
@@ -133,6 +138,7 @@ export function StoreProvider({ children }) {
             goals: fetchedGoals,
             recurring: fetchedRecurring,
             debts: fetchedDebts,
+            huis: fetchedHuis,
             theme: savedTheme
           });
           setIsLoaded(true);
@@ -610,6 +616,40 @@ export function StoreProvider({ children }) {
     }
   };
 
+  // 8. Hụi Actions
+  const addHui = async (h) => {
+    const newH = { 
+      ...h, 
+      id: 'hui-' + Date.now(), 
+      status: 'active',
+      roundsData: h.roundsData || []
+    };
+    setAppState(prev => ({ ...prev, huis: [...prev.huis, newH] }));
+    if (supabase) {
+      const { error } = await supabase.from('huis').insert(newH);
+      if (error) console.error("Lỗi khi thêm dây hụi vào Supabase:", error);
+    }
+  };
+
+  const updateHui = async (updatedH) => {
+    setAppState(prev => ({
+      ...prev,
+      huis: prev.huis.map(h => h.id === updatedH.id ? updatedH : h)
+    }));
+    if (supabase) {
+      const { error } = await supabase.from('huis').update(updatedH).eq('id', updatedH.id);
+      if (error) console.error("Lỗi khi cập nhật dây hụi trên Supabase:", error);
+    }
+  };
+
+  const deleteHui = async (id) => {
+    setAppState(prev => ({ ...prev, huis: prev.huis.filter(h => h.id !== id) }));
+    if (supabase) {
+      const { error } = await supabase.from('huis').delete().eq('id', id);
+      if (error) console.error("Lỗi khi xóa dây hụi trên Supabase:", error);
+    }
+  };
+
   return (
     <StoreContext.Provider value={{
       isLoaded,
@@ -619,6 +659,7 @@ export function StoreProvider({ children }) {
       goals: appState.goals,
       recurring: appState.recurring,
       debts: appState.debts,
+      huis: appState.huis,
       theme: appState.theme,
       toggleTheme,
       addTransaction,
@@ -637,6 +678,9 @@ export function StoreProvider({ children }) {
       addDebt,
       deleteDebt,
       payDebt,
+      addHui,
+      updateHui,
+      deleteHui,
       resetAllData,
       clearAllData,
       importAllData
