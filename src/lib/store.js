@@ -112,13 +112,32 @@ export function StoreProvider({ children }) {
 
           if (fetchedMembers.length === 0 && fetchedCategories.length === 0) {
             console.log("Database trống, đang khởi tạo dữ liệu mẫu lên Supabase...");
+            
+            const dbSampleTransactions = INITIAL_TRANSACTIONS.map(t => {
+              const dbT = { ...t, memberid: t.memberId };
+              delete dbT.memberId;
+              return dbT;
+            });
+            const dbSampleRecurring = INITIAL_RECURRING.map(r => {
+              const dbR = { ...r, nextdue: r.nextDue, memberid: r.memberId };
+              delete dbR.nextDue;
+              delete dbR.memberId;
+              return dbR;
+            });
+            const dbSampleDebts = INITIAL_DEBTS.map(d => {
+              const dbD = { ...d, paidamount: d.paidAmount, duedate: d.dueDate };
+              delete dbD.paidAmount;
+              delete dbD.dueDate;
+              return dbD;
+            });
+
             await Promise.all([
               supabase.from('members').insert(INITIAL_MEMBERS),
               supabase.from('categories').insert(INITIAL_CATEGORIES),
               supabase.from('goals').insert(INITIAL_GOALS),
-              supabase.from('recurring').insert(INITIAL_RECURRING),
-              supabase.from('debts').insert(INITIAL_DEBTS),
-              supabase.from('transactions').insert(INITIAL_TRANSACTIONS)
+              supabase.from('recurring').insert(dbSampleRecurring),
+              supabase.from('debts').insert(dbSampleDebts),
+              supabase.from('transactions').insert(dbSampleTransactions)
             ]);
             fetchedMembers = INITIAL_MEMBERS;
             fetchedCategories = INITIAL_CATEGORIES;
@@ -126,6 +145,26 @@ export function StoreProvider({ children }) {
             fetchedGoals = INITIAL_GOALS;
             fetchedRecurring = INITIAL_RECURRING;
             fetchedDebts = INITIAL_DEBTS;
+          } else {
+            // Map DB lowercase columns to camelCase for the frontend
+            fetchedTransactions = fetchedTransactions.map(t => ({
+              ...t,
+              memberId: t.memberid
+            }));
+            fetchedHuis = fetchedHuis.map(h => ({
+              ...h,
+              roundsData: h.roundsdata || []
+            }));
+            fetchedRecurring = fetchedRecurring.map(r => ({
+              ...r,
+              nextDue: r.nextdue,
+              memberId: r.memberid
+            }));
+            fetchedDebts = fetchedDebts.map(d => ({
+              ...d,
+              paidAmount: d.paidamount,
+              dueDate: d.duedate
+            }));
           }
 
           const savedTheme = localStorage.getItem('hl_theme') || 'dark';
@@ -148,6 +187,20 @@ export function StoreProvider({ children }) {
         }
       } else {
         console.error("Supabase chưa được cấu hình. Vui lòng kiểm tra file .env.local.");
+        
+        const savedTheme = localStorage.getItem('hl_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        setAppState({
+          members: INITIAL_MEMBERS,
+          categories: INITIAL_CATEGORIES,
+          transactions: INITIAL_TRANSACTIONS,
+          goals: INITIAL_GOALS,
+          recurring: INITIAL_RECURRING,
+          debts: INITIAL_DEBTS,
+          huis: [],
+          theme: savedTheme
+        });
         setIsLoaded(true);
       }
     }
@@ -169,7 +222,9 @@ export function StoreProvider({ children }) {
     setAppState(prev => ({ ...prev, transactions: [newT, ...prev.transactions] }));
 
     if (supabase) {
-      const { error } = await supabase.from('transactions').insert(newT);
+      const dbT = { ...newT, memberid: newT.memberId };
+      delete dbT.memberId;
+      const { error } = await supabase.from('transactions').insert(dbT);
       if (error) console.error("Lỗi khi thêm giao dịch vào Supabase:", error);
     }
   };
@@ -181,7 +236,9 @@ export function StoreProvider({ children }) {
     }));
 
     if (supabase) {
-      const { error } = await supabase.from('transactions').update(updatedT).eq('id', updatedT.id);
+      const dbT = { ...updatedT, memberid: updatedT.memberId };
+      delete dbT.memberId;
+      const { error } = await supabase.from('transactions').update(dbT).eq('id', updatedT.id);
       if (error) console.error("Lỗi khi cập nhật giao dịch trên Supabase:", error);
     }
   };
@@ -241,7 +298,6 @@ export function StoreProvider({ children }) {
         return prev;
       }
       const updated = prev.members.filter(m => m.id !== id);
-      if (!supabase) localStorage.setItem('hl_members', JSON.stringify(updated));
       return { ...prev, members: updated };
     });
 
@@ -253,11 +309,7 @@ export function StoreProvider({ children }) {
 
   const addGoal = async (g) => {
     const newG = { ...g, id: 'g-' + Date.now(), current: Number(g.current) || 0, target: Number(g.target) };
-    setAppState(prev => {
-      const updated = [...prev.goals, newG];
-      if (!supabase) localStorage.setItem('hl_goals', JSON.stringify(updated));
-      return { ...prev, goals: updated };
-    });
+    setAppState(prev => ({ ...prev, goals: [...prev.goals, newG] }));
 
     if (supabase) {
       const { error } = await supabase.from('goals').insert(newG);
@@ -267,11 +319,10 @@ export function StoreProvider({ children }) {
 
   const updateGoal = async (updatedG) => {
     const formatted = { ...updatedG, target: Number(updatedG.target), current: Number(updatedG.current) };
-    setAppState(prev => {
-      const updated = prev.goals.map(g => g.id === updatedG.id ? formatted : g);
-      if (!supabase) localStorage.setItem('hl_goals', JSON.stringify(updated));
-      return { ...prev, goals: updated };
-    });
+    setAppState(prev => ({
+      ...prev,
+      goals: prev.goals.map(g => g.id === updatedG.id ? formatted : g)
+    }));
 
     if (supabase) {
       const { error } = await supabase.from('goals').update(formatted).eq('id', updatedG.id);
@@ -280,11 +331,10 @@ export function StoreProvider({ children }) {
   };
 
   const deleteGoal = async (id) => {
-    setAppState(prev => {
-      const updated = prev.goals.filter(g => g.id !== id);
-      if (!supabase) localStorage.setItem('hl_goals', JSON.stringify(updated));
-      return { ...prev, goals: updated };
-    });
+    setAppState(prev => ({
+      ...prev,
+      goals: prev.goals.filter(g => g.id !== id)
+    }));
 
     if (supabase) {
       const { error } = await supabase.from('goals').delete().eq('id', id);
@@ -294,24 +344,22 @@ export function StoreProvider({ children }) {
 
   const addRecurring = async (rec) => {
     const newRec = { ...rec, id: 'rec-' + Date.now(), amount: Number(rec.amount) };
-    setAppState(prev => {
-      const updated = [...prev.recurring, newRec];
-      if (!supabase) localStorage.setItem('hl_recurring', JSON.stringify(updated));
-      return { ...prev, recurring: updated };
-    });
+    setAppState(prev => ({ ...prev, recurring: [...prev.recurring, newRec] }));
 
     if (supabase) {
-      const { error } = await supabase.from('recurring').insert(newRec);
+      const dbRec = { ...newRec, nextdue: newRec.nextDue, memberid: newRec.memberId };
+      delete dbRec.nextDue;
+      delete dbRec.memberId;
+      const { error } = await supabase.from('recurring').insert(dbRec);
       if (error) console.error("Lỗi khi thêm chi tiêu định kỳ vào Supabase:", error);
     }
   };
 
   const deleteRecurring = async (id) => {
-    setAppState(prev => {
-      const updated = prev.recurring.filter(r => r.id !== id);
-      if (!supabase) localStorage.setItem('hl_recurring', JSON.stringify(updated));
-      return { ...prev, recurring: updated };
-    });
+    setAppState(prev => ({
+      ...prev,
+      recurring: prev.recurring.filter(r => r.id !== id)
+    }));
 
     if (supabase) {
       const { error } = await supabase.from('recurring').delete().eq('id', id);
@@ -346,11 +394,6 @@ export function StoreProvider({ children }) {
       updatedRecurring = prev.recurring.map(r => r.id === rec.id ? { ...r, nextDue: formattedNextDate } : r);
       updatedTransactions = [newT, ...prev.transactions];
 
-      if (!supabase) {
-        localStorage.setItem('hl_recurring', JSON.stringify(updatedRecurring));
-        localStorage.setItem('hl_transactions', JSON.stringify(updatedTransactions));
-      }
-
       return {
         ...prev,
         recurring: updatedRecurring,
@@ -366,9 +409,12 @@ export function StoreProvider({ children }) {
       nextDate.setMonth(nextDate.getMonth() + 1);
       const formattedNextDate = nextDate.toISOString().split('T')[0];
 
+      const dbT = { ...newT, memberid: newT.memberId };
+      delete dbT.memberId;
+
       await Promise.all([
-        supabase.from('recurring').update({ nextDue: formattedNextDate }).eq('id', rec.id),
-        supabase.from('transactions').insert(newT)
+        supabase.from('recurring').update({ nextdue: formattedNextDate }).eq('id', rec.id),
+        supabase.from('transactions').insert(dbT)
       ]);
     }
   };
@@ -381,24 +427,22 @@ export function StoreProvider({ children }) {
       paidAmount: Number(d.paidAmount) || 0, 
       status: Number(d.paidAmount) >= Number(d.amount) ? 'completed' : 'active' 
     };
-    setAppState(prev => {
-      const updated = [...prev.debts, newD];
-      if (!supabase) localStorage.setItem('hl_debts', JSON.stringify(updated));
-      return { ...prev, debts: updated };
-    });
+    setAppState(prev => ({ ...prev, debts: [...prev.debts, newD] }));
 
     if (supabase) {
-      const { error } = await supabase.from('debts').insert(newD);
+      const dbD = { ...newD, paidamount: newD.paidAmount, duedate: newD.dueDate };
+      delete dbD.paidAmount;
+      delete dbD.dueDate;
+      const { error } = await supabase.from('debts').insert(dbD);
       if (error) console.error("Lỗi khi thêm khoản nợ vào Supabase:", error);
     }
   };
 
   const deleteDebt = async (id) => {
-    setAppState(prev => {
-      const updated = prev.debts.filter(d => d.id !== id);
-      if (!supabase) localStorage.setItem('hl_debts', JSON.stringify(updated));
-      return { ...prev, debts: updated };
-    });
+    setAppState(prev => ({
+      ...prev,
+      debts: prev.debts.filter(d => d.id !== id)
+    }));
 
     if (supabase) {
       const { error } = await supabase.from('debts').delete().eq('id', id);
@@ -424,8 +468,6 @@ export function StoreProvider({ children }) {
         status: completed ? 'completed' : 'active'
       } : d);
 
-      if (!supabase) localStorage.setItem('hl_debts', JSON.stringify(updatedDebts));
-
       if (autoLog) {
         const isExpense = targetDebt.type === 'debt';
         newT = {
@@ -439,7 +481,6 @@ export function StoreProvider({ children }) {
           notes: isExpense ? `Thanh toán nợ cho ${targetDebt.name}` : `Thu hồi khoản cho ${targetDebt.name} vay`
         };
         const updatedTransactions = [newT, ...prev.transactions];
-        if (!supabase) localStorage.setItem('hl_transactions', JSON.stringify(updatedTransactions));
         return {
           ...prev,
           debts: updatedDebts,
@@ -459,13 +500,15 @@ export function StoreProvider({ children }) {
       
       const dbPromises = [
         supabase.from('debts').update({
-          paidAmount: nextPaid,
+          paidamount: nextPaid,
           status: completed ? 'completed' : 'active'
         }).eq('id', id)
       ];
 
       if (autoLog && newT) {
-        dbPromises.push(supabase.from('transactions').insert(newT));
+        const dbT = { ...newT, memberid: newT.memberId };
+        delete dbT.memberId;
+        dbPromises.push(supabase.from('transactions').insert(dbT));
       }
 
       await Promise.all(dbPromises);
@@ -480,24 +523,36 @@ export function StoreProvider({ children }) {
         supabase.from('transactions').delete().neq('id', ''),
         supabase.from('goals').delete().neq('id', ''),
         supabase.from('recurring').delete().neq('id', ''),
-        supabase.from('debts').delete().neq('id', '')
+        supabase.from('debts').delete().neq('id', ''),
+        supabase.from('huis').delete().neq('id', '')
       ]);
+
+      const dbSampleTransactions = INITIAL_TRANSACTIONS.map(t => {
+        const dbT = { ...t, memberid: t.memberId };
+        delete dbT.memberId;
+        return dbT;
+      });
+      const dbSampleRecurring = INITIAL_RECURRING.map(r => {
+        const dbR = { ...r, nextdue: r.nextDue, memberid: r.memberId };
+        delete dbR.nextDue;
+        delete dbR.memberId;
+        return dbR;
+      });
+      const dbSampleDebts = INITIAL_DEBTS.map(d => {
+        const dbD = { ...d, paidamount: d.paidAmount, duedate: d.dueDate };
+        delete dbD.paidAmount;
+        delete dbD.dueDate;
+        return dbD;
+      });
 
       await Promise.all([
         supabase.from('members').insert(INITIAL_MEMBERS),
         supabase.from('categories').insert(INITIAL_CATEGORIES),
         supabase.from('goals').insert(INITIAL_GOALS),
-        supabase.from('recurring').insert(INITIAL_RECURRING),
-        supabase.from('debts').insert(INITIAL_DEBTS),
-        supabase.from('transactions').insert(INITIAL_TRANSACTIONS)
+        supabase.from('recurring').insert(dbSampleRecurring),
+        supabase.from('debts').insert(dbSampleDebts),
+        supabase.from('transactions').insert(dbSampleTransactions)
       ]);
-    } else {
-      localStorage.removeItem('hl_members');
-      localStorage.removeItem('hl_categories');
-      localStorage.removeItem('hl_transactions');
-      localStorage.removeItem('hl_goals');
-      localStorage.removeItem('hl_recurring');
-      localStorage.removeItem('hl_debts');
     }
     
     setAppState({
@@ -507,6 +562,7 @@ export function StoreProvider({ children }) {
       goals: INITIAL_GOALS,
       recurring: INITIAL_RECURRING,
       debts: INITIAL_DEBTS,
+      huis: [],
       theme: appState.theme
     });
   };
@@ -522,20 +578,14 @@ export function StoreProvider({ children }) {
         supabase.from('transactions').delete().neq('id', ''),
         supabase.from('goals').delete().neq('id', ''),
         supabase.from('recurring').delete().neq('id', ''),
-        supabase.from('debts').delete().neq('id', '')
+        supabase.from('debts').delete().neq('id', ''),
+        supabase.from('huis').delete().neq('id', '')
       ]);
 
       await Promise.all([
         supabase.from('members').insert(defaultMember),
         supabase.from('categories').insert(defaultCategories)
       ]);
-    } else {
-      localStorage.setItem('hl_members', JSON.stringify(defaultMember));
-      localStorage.setItem('hl_categories', JSON.stringify(defaultCategories));
-      localStorage.removeItem('hl_transactions');
-      localStorage.removeItem('hl_goals');
-      localStorage.removeItem('hl_recurring');
-      localStorage.removeItem('hl_debts');
     }
     
     setAppState({
@@ -545,6 +595,7 @@ export function StoreProvider({ children }) {
       goals: [],
       recurring: [],
       debts: [],
+      huis: [],
       theme: appState.theme
     });
   };
@@ -560,48 +611,64 @@ export function StoreProvider({ children }) {
         nextState.members = data.members;
         if (supabase) {
           promises.push(supabase.from('members').delete().neq('id', '').then(() => supabase.from('members').insert(data.members)));
-        } else {
-          localStorage.setItem('hl_members', JSON.stringify(data.members));
         }
       }
       if (data.categories) {
         nextState.categories = data.categories;
         if (supabase) {
           promises.push(supabase.from('categories').delete().neq('id', '').then(() => supabase.from('categories').insert(data.categories)));
-        } else {
-          localStorage.setItem('hl_categories', JSON.stringify(data.categories));
         }
       }
       if (data.transactions) {
         nextState.transactions = data.transactions;
         if (supabase) {
-          promises.push(supabase.from('transactions').delete().neq('id', '').then(() => supabase.from('transactions').insert(data.transactions)));
-        } else {
-          localStorage.setItem('hl_transactions', JSON.stringify(data.transactions));
+          const dbT = data.transactions.map(t => {
+            const copy = { ...t, memberid: t.memberId };
+            delete copy.memberId;
+            return copy;
+          });
+          promises.push(supabase.from('transactions').delete().neq('id', '').then(() => supabase.from('transactions').insert(dbT)));
         }
       }
       if (data.goals) {
         nextState.goals = data.goals;
         if (supabase) {
           promises.push(supabase.from('goals').delete().neq('id', '').then(() => supabase.from('goals').insert(data.goals)));
-        } else {
-          localStorage.setItem('hl_goals', JSON.stringify(data.goals));
         }
       }
       if (data.recurring) {
         nextState.recurring = data.recurring;
         if (supabase) {
-          promises.push(supabase.from('recurring').delete().neq('id', '').then(() => supabase.from('recurring').insert(data.recurring)));
-        } else {
-          localStorage.setItem('hl_recurring', JSON.stringify(data.recurring));
+          const dbRec = data.recurring.map(r => {
+            const copy = { ...r, nextdue: r.nextDue, memberid: r.memberId };
+            delete copy.nextDue;
+            delete copy.memberId;
+            return copy;
+          });
+          promises.push(supabase.from('recurring').delete().neq('id', '').then(() => supabase.from('recurring').insert(dbRec)));
         }
       }
       if (data.debts) {
         nextState.debts = data.debts;
         if (supabase) {
-          promises.push(supabase.from('debts').delete().neq('id', '').then(() => supabase.from('debts').insert(data.debts)));
-        } else {
-          localStorage.setItem('hl_debts', JSON.stringify(data.debts));
+          const dbD = data.debts.map(d => {
+            const copy = { ...d, paidamount: d.paidAmount, duedate: d.dueDate };
+            delete copy.paidAmount;
+            delete copy.dueDate;
+            return copy;
+          });
+          promises.push(supabase.from('debts').delete().neq('id', '').then(() => supabase.from('debts').insert(dbD)));
+        }
+      }
+      if (data.huis) {
+        nextState.huis = data.huis;
+        if (supabase) {
+          const dbH = data.huis.map(h => {
+            const copy = { ...h, roundsdata: h.roundsData };
+            delete copy.roundsData;
+            return copy;
+          });
+          promises.push(supabase.from('huis').delete().neq('id', '').then(() => supabase.from('huis').insert(dbH)));
         }
       }
       
@@ -626,7 +693,9 @@ export function StoreProvider({ children }) {
     };
     setAppState(prev => ({ ...prev, huis: [...prev.huis, newH] }));
     if (supabase) {
-      const { error } = await supabase.from('huis').insert(newH);
+      const dbH = { ...newH, roundsdata: newH.roundsData };
+      delete dbH.roundsData;
+      const { error } = await supabase.from('huis').insert(dbH);
       if (error) console.error("Lỗi khi thêm dây hụi vào Supabase:", error);
     }
   };
@@ -637,7 +706,9 @@ export function StoreProvider({ children }) {
       huis: prev.huis.map(h => h.id === updatedH.id ? updatedH : h)
     }));
     if (supabase) {
-      const { error } = await supabase.from('huis').update(updatedH).eq('id', updatedH.id);
+      const dbH = { ...updatedH, roundsdata: updatedH.roundsData };
+      delete dbH.roundsData;
+      const { error } = await supabase.from('huis').update(dbH).eq('id', updatedH.id);
       if (error) console.error("Lỗi khi cập nhật dây hụi trên Supabase:", error);
     }
   };
