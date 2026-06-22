@@ -17,7 +17,9 @@ export default function RecurringView() {
   const [freq, setFreq] = useState('monthly');
   const [nextDue, setNextDue] = useState(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-01`;
   });
 
   const formatNumberString = (val) => {
@@ -49,7 +51,10 @@ export default function RecurringView() {
     setCat(categories[0]?.id || 'cat-1');
     setMId(members[0]?.id || 'm-1');
     setFreq('monthly');
-    setNextDue(new Date().toISOString().split('T')[0]);
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    setNextDue(`${year}-${month}-01`);
     setShowAddForm(false);
   };
 
@@ -109,32 +114,7 @@ export default function RecurringView() {
               </div>
             </div>
 
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>Tần suất</label>
-                <select 
-                  value={freq} 
-                  onChange={(e) => setFreq(e.target.value)}
-                  className={styles.input}
-                  id="rec-freq-select"
-                >
-                  <option value="weekly">Hàng tuần</option>
-                  <option value="monthly">Hàng tháng</option>
-                </select>
-              </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.inputLabel}>Ngày thanh toán tiếp theo</label>
-                <input 
-                  type="date" 
-                  required
-                  value={nextDue}
-                  onChange={(e) => setNextDue(e.target.value)}
-                  className={styles.input}
-                  id="rec-due-input"
-                />
-              </div>
-            </div>
 
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
@@ -194,11 +174,10 @@ export default function RecurringView() {
                   <h3 className={styles.recName}>{rec.name}</h3>
                   <div className={styles.recMeta}>
                     <span className={styles.metaBadge}>{category?.name || 'Chi tiêu'}</span>
-                    <span>• Tần suất: {rec.frequency === 'monthly' ? 'Hàng tháng' : 'Hàng tuần'}</span>
                     <span>• Người đóng: {member?.name}</span>
                   </div>
                   <p className={styles.recNextDue}>
-                    Ngày đóng tiếp theo: <strong>{rec.nextDue}</strong>
+                    Ngày đóng: <strong>Ngày {rec.nextDue ? new Date(rec.nextDue).getDate() : 1} hàng tháng</strong>
                   </p>
                 </div>
               </div>
