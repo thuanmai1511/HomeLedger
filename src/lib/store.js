@@ -153,6 +153,8 @@ export function StoreProvider({ children }) {
             }));
             fetchedHuis = fetchedHuis.map(h => ({
               ...h,
+              totalShares: h.totalshares,
+              startDate: h.startdate,
               roundsData: h.roundsdata || []
             }));
             fetchedRecurring = fetchedRecurring.map(r => ({
@@ -664,8 +666,15 @@ export function StoreProvider({ children }) {
         nextState.huis = data.huis;
         if (supabase) {
           const dbH = data.huis.map(h => {
-            const copy = { ...h, roundsdata: h.roundsData };
+            const copy = { 
+              ...h, 
+              roundsdata: h.roundsData,
+              totalshares: h.totalShares,
+              startdate: h.startDate
+            };
             delete copy.roundsData;
+            delete copy.totalShares;
+            delete copy.startDate;
             return copy;
           });
           promises.push(supabase.from('huis').delete().neq('id', '').then(() => supabase.from('huis').insert(dbH)));
@@ -693,8 +702,15 @@ export function StoreProvider({ children }) {
     };
     setAppState(prev => ({ ...prev, huis: [...prev.huis, newH] }));
     if (supabase) {
-      const dbH = { ...newH, roundsdata: newH.roundsData };
+      const dbH = { 
+        ...newH, 
+        roundsdata: newH.roundsData,
+        totalshares: newH.totalShares,
+        startdate: newH.startDate
+      };
       delete dbH.roundsData;
+      delete dbH.totalShares;
+      delete dbH.startDate;
       const { error } = await supabase.from('huis').insert(dbH);
       if (error) console.error("Lỗi khi thêm dây hụi vào Supabase:", error);
     }
@@ -706,8 +722,15 @@ export function StoreProvider({ children }) {
       huis: prev.huis.map(h => h.id === updatedH.id ? updatedH : h)
     }));
     if (supabase) {
-      const dbH = { ...updatedH, roundsdata: updatedH.roundsData };
+      const dbH = { 
+        ...updatedH, 
+        roundsdata: updatedH.roundsData,
+        totalshares: updatedH.totalShares,
+        startdate: updatedH.startDate
+      };
       delete dbH.roundsData;
+      delete dbH.totalShares;
+      delete dbH.startDate;
       const { error } = await supabase.from('huis').update(dbH).eq('id', updatedH.id);
       if (error) console.error("Lỗi khi cập nhật dây hụi trên Supabase:", error);
     }
