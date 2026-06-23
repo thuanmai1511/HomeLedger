@@ -373,81 +373,164 @@ select.input {
   border-radius: var(--radius-md);
 }
 
-.cardTitle {
-  font-size: 1.15rem;
-  font-weight: 700;
+.reportSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 14px;
   margin-bottom: 20px;
+}
+
+.cardTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
   color: var(--text-primary);
+  margin: 0;
 }
 
-.overviewGrid {
+.badgeReport {
+  font-size: 0.75rem;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  padding: 4px 10px;
+  border-radius: 30px;
+  font-weight: 600;
+}
+
+.reportMainSections {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
 }
 
-@media (max-width: 768px) {
-  .overviewGrid {
+@media (max-width: 992px) {
+  .reportMainSections {
     grid-template-columns: 1fr;
-    gap: 16px;
   }
 }
 
-.overviewStat {
+.reportSubCard {
+  background: rgba(var(--bg-secondary-rgb), 0.5);
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 14px;
+}
+
+.subCardTitle {
+  font-size: 0.85rem;
+  font-weight: 750;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin: 0 0 4px 0;
+  border-bottom: 1px dashed var(--border-color);
+  padding-bottom: 8px;
+}
+
+.subCardStat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
 }
 
 .statLabel {
-  font-size: 0.85rem;
   color: var(--text-secondary);
 }
 
 .statVal {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 750;
-  font-family: var(--font-display);
+}
+
+.costBreakdownMini {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-secondary);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.breakdownRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.breakdownRow span {
+  color: var(--text-secondary);
+}
+
+.breakdownRow strong {
   color: var(--text-primary);
 }
 
-.costBreakdown {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px dashed var(--border-color);
+/* Progress indicator styles */
+.progressContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 10px;
 }
 
-.breakdownTitle {
-  font-size: 0.85rem;
-  font-weight: 700;
+.progressLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
   color: var(--text-secondary);
-  display: block;
-  margin-bottom: 12px;
 }
 
-.breakdownGrid {
+.progressBarBg {
+  height: 6px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.progressBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+
+/* Profit highlights */
+.profitHighlightGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-@media (max-width: 768px) {
-  .breakdownGrid {
+@media (max-width: 576px) {
+  .profitHighlightGrid {
     grid-template-columns: 1fr;
   }
 }
 
-.breakdownItem {
-  display: flex;
-  justify-content: space-between;
+.profitBox {
   background: var(--bg-secondary);
-  padding: 10px 14px;
+  padding: 16px;
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.breakdownItem span {
+.profitBoxLabel {
+  font-size: 0.8rem;
   color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.profitBoxVal {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-family: var(--font-display);
 }
 
 .breakdownItem strong {

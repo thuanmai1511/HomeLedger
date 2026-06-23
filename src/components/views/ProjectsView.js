@@ -26,11 +26,7 @@ export default function ProjectsView() {
     projects, 
     addProject, 
     updateProject, 
-    deleteProject,
-    categories,
-    members,
-    addTransaction,
-    deleteTransaction
+    deleteProject
   } = useStore();
 
   const [activeProjectId, setActiveProjectId] = useState(null);
@@ -56,8 +52,6 @@ export default function ProjectsView() {
   const [expDesc, setExpDesc] = useState('');
   const [rawExpAmount, setRawExpAmount] = useState('');
   const [expDate, setExpDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [expCategory, setExpCategory] = useState(() => categories[0]?.id || 'cat-7');
-  const [expMember, setExpMember] = useState(() => members[0]?.id || 'm-1');
 
   const formatNumberString = (val) => {
     const clean = val.replace(/\D/g, '');
@@ -152,25 +146,11 @@ export default function ProjectsView() {
     const amt = Number(rawPayAmount.replace(/\./g, ''));
     if (!payDesc.trim() || isNaN(amt) || amt <= 0 || !selectedProject) return;
 
-    // Create double-booked transaction in ledger
-    const transactionId = 't-proj-pay-' + Date.now();
-    addTransaction({
-      id: transactionId,
-      description: `[Thu công trình] ${selectedProject.name} - ${payDesc}`,
-      amount: amt,
-      type: 'income',
-      category: 'income',
-      date: payDate,
-      memberId: members[0]?.id || 'm-1',
-      notes: `Ghi nhận thu tiền từ dự án thầu thầu xây dựng: ${selectedProject.name}`
-    });
-
     const newPayment = {
       id: 'pay-' + Date.now(),
       description: payDesc,
       amount: amt,
-      date: payDate,
-      transactionId
+      date: payDate
     };
 
     updateProject({
@@ -189,32 +169,12 @@ export default function ProjectsView() {
     const amt = Number(rawExpAmount.replace(/\./g, ''));
     if (!expDesc.trim() || isNaN(amt) || amt <= 0 || !selectedProject) return;
 
-    const labelMap = {
-      materials: 'Vật tư',
-      labor: 'Nhân công',
-      other: 'Khác'
-    };
-
-    // Create double-booked transaction in ledger
-    const transactionId = 't-proj-exp-' + Date.now();
-    addTransaction({
-      id: transactionId,
-      description: `[Chi công trình] ${selectedProject.name} - [${labelMap[expType]}] ${expDesc}`,
-      amount: amt,
-      type: 'expense',
-      category: expCategory,
-      date: expDate,
-      memberId: expMember,
-      notes: `Chi phí công trình xây dựng: ${selectedProject.name}`
-    });
-
     const newExpense = {
       id: 'exp-' + Date.now(),
       type: expType,
       description: expDesc,
       amount: amt,
-      date: expDate,
-      transactionId
+      date: expDate
     };
 
     updateProject({
@@ -230,12 +190,7 @@ export default function ProjectsView() {
 
   const handleDeletePayment = (payment) => {
     if (!selectedProject) return;
-    if (confirm(`Bạn có chắc chắn muốn xóa đợt thu "${payment.description}"? Sổ cái giao dịch liên kết cũng sẽ bị xóa.`)) {
-      // Reverse transaction
-      if (payment.transactionId) {
-        deleteTransaction(payment.transactionId);
-      }
-      
+    if (confirm(`Bạn có chắc chắn muốn xóa đợt thu "${payment.description}"?`)) {
       updateProject({
         ...selectedProject,
         payments: selectedProject.payments.filter(p => p.id !== payment.id)
@@ -245,12 +200,7 @@ export default function ProjectsView() {
 
   const handleDeleteExpense = (expense) => {
     if (!selectedProject) return;
-    if (confirm(`Bạn có chắc chắn muốn xóa chi phí "${expense.description}"? Sổ cái giao dịch liên kết cũng sẽ bị xóa.`)) {
-      // Reverse transaction
-      if (expense.transactionId) {
-        deleteTransaction(expense.transactionId);
-      }
-
+    if (confirm(`Bạn có chắc chắn muốn xóa chi phí "${expense.description}"?`)) {
       updateProject({
         ...selectedProject,
         expenses: selectedProject.expenses.filter(e => e.id !== expense.id)
@@ -473,60 +423,107 @@ export default function ProjectsView() {
             </p>
           </div>
 
-          {/* Financial calculations (P&L Card) */}
+          {/* Upgraded Financial calculations (P&L Card) */}
           <section className={`${styles.overviewCard} glass-card`}>
-            <h3 className={styles.cardTitle}>Báo cáo doanh thu & chi phí dự án</h3>
-            <div className={styles.overviewGrid}>
-              <div className={styles.overviewStat}>
-                <span className={styles.statLabel}>Giá trị hợp đồng thầu</span>
-                <span className={styles.statVal}>{formatVND(selectedProject.contractValue)}</span>
-              </div>
-              <div className={styles.overviewStat}>
-                <span className={styles.statLabel}>Đã nhận (Doanh thu)</span>
-                <span className={styles.statVal} style={{ color: 'var(--secondary)' }}>{formatVND(projectStats.totalPayments)}</span>
-              </div>
-              <div className={styles.overviewStat}>
-                <span className={styles.statLabel}>Chủ đầu tư còn nợ</span>
-                <span className={styles.statVal} style={{ color: projectStats.remainingDebt > 0 ? 'var(--warning)' : 'var(--text-muted)' }}>
-                  {formatVND(projectStats.remainingDebt)}
-                </span>
-              </div>
+            <div className={styles.reportSectionHeader}>
+              <h3 className={styles.cardTitle}>Báo cáo tài chính & Hiệu quả dự án</h3>
+              <span className={styles.badgeReport}>Công trình độc lập</span>
             </div>
 
-            <div className={styles.overviewGrid} style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-              <div className={styles.overviewStat}>
-                <span className={styles.statLabel}>Tổng chi phí thầu xây dựng</span>
-                <span className={styles.statVal} style={{ color: 'var(--danger)' }}>{formatVND(projectStats.totalExpenses)}</span>
-              </div>
-              <div className={styles.overviewStat}>
-                <span className={styles.statLabel}>Lợi nhuận thực tế (Tiền mặt)</span>
-                <span className={styles.statVal} style={{ color: projectStats.actualProfit >= 0 ? 'var(--secondary)' : 'var(--danger)' }}>
-                  {formatVND(projectStats.actualProfit)}
-                </span>
-              </div>
-              <div className={styles.overviewStat}>
-                <span className={styles.statLabel}>Lợi nhuận dự kiến (Bàn giao)</span>
-                <span className={styles.statVal} style={{ color: projectStats.projectedProfit >= 0 ? 'var(--primary)' : 'var(--danger)' }}>
-                  {formatVND(projectStats.projectedProfit)}
-                </span>
-              </div>
-            </div>
+            <div className={styles.reportMainSections}>
+              {/* Group 1: Revenue & Contract status */}
+              <div className={styles.reportSubCard}>
+                <h4 className={styles.subCardTitle}>💳 DOANH THU & HỢP ĐỒNG</h4>
+                <div className={styles.subCardStat}>
+                  <span className={styles.statLabel}>Giá trị hợp đồng ký kết</span>
+                  <strong className={styles.statVal}>{formatVND(selectedProject.contractValue)}</strong>
+                </div>
+                <div className={styles.subCardStat}>
+                  <span className={styles.statLabel}>Đã thu hồi (Doanh thu thực tế)</span>
+                  <strong className={styles.statVal} style={{ color: 'var(--secondary)' }}>{formatVND(projectStats.totalPayments)}</strong>
+                </div>
+                <div className={styles.subCardStat}>
+                  <span className={styles.statLabel}>Chủ nhà còn nợ (Công nợ)</span>
+                  <strong className={styles.statVal} style={{ color: projectStats.remainingDebt > 0 ? 'var(--warning)' : 'var(--text-muted)' }}>
+                    {formatVND(projectStats.remainingDebt)}
+                  </strong>
+                </div>
 
-            {/* Categorized spending breakdown */}
-            <div className={styles.costBreakdown}>
-              <span className={styles.breakdownTitle}>Chi tiết cơ cấu chi phí:</span>
-              <div className={styles.breakdownGrid}>
-                <div className={styles.breakdownItem}>
-                  <span>🧱 Vật tư:</span>
-                  <strong>{formatVND(projectStats.materialsCost)}</strong>
+                {/* Progress bar */}
+                <div className={styles.progressContainer}>
+                  <div className={styles.progressLabel}>
+                    <span>Tiến độ thu tiền:</span>
+                    <strong>{selectedProject.contractValue > 0 ? Math.round((projectStats.totalPayments / selectedProject.contractValue) * 100) : 0}%</strong>
+                  </div>
+                  <div className={styles.progressBarBg}>
+                    <div 
+                      className={styles.progressBarFill} 
+                      style={{ 
+                        width: `${Math.min(selectedProject.contractValue > 0 ? (projectStats.totalPayments / selectedProject.contractValue) * 100 : 0, 100)}%`,
+                        backgroundColor: 'var(--secondary)'
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className={styles.breakdownItem}>
-                  <span>👷 Nhân công thợ:</span>
-                  <strong>{formatVND(projectStats.laborCost)}</strong>
+              </div>
+
+              {/* Group 2: Expenses & Costs */}
+              <div className={styles.reportSubCard}>
+                <h4 className={styles.subCardTitle}>🧱 CHI PHÍ ĐÃ CHI</h4>
+                <div className={styles.subCardStat}>
+                  <span className={styles.statLabel}>Tổng chi phí xây dựng đã chi</span>
+                  <strong className={styles.statVal} style={{ color: 'var(--danger)' }}>{formatVND(projectStats.totalExpenses)}</strong>
                 </div>
-                <div className={styles.breakdownItem}>
-                  <span>⚙️ Thiết bị & khác:</span>
-                  <strong>{formatVND(projectStats.otherCost)}</strong>
+
+                <div className={styles.costBreakdownMini}>
+                  <div className={styles.breakdownRow}>
+                    <span>🧱 Vật liệu xây tô</span>
+                    <strong>{formatVND(projectStats.materialsCost)}</strong>
+                  </div>
+                  <div className={styles.breakdownRow}>
+                    <span>👷 Nhân công & Tổ thợ</span>
+                    <strong>{formatVND(projectStats.laborCost)}</strong>
+                  </div>
+                  <div className={styles.breakdownRow}>
+                    <span>⚙️ Máy móc & Khác</span>
+                    <strong>{formatVND(projectStats.otherCost)}</strong>
+                  </div>
+                </div>
+
+                {/* Expense/Revenue Ratio */}
+                <div className={styles.progressContainer} style={{ marginTop: '14px' }}>
+                  <div className={styles.progressLabel}>
+                    <span>Tỉ lệ chi phí / Doanh thu:</span>
+                    <strong>{projectStats.totalPayments > 0 ? Math.round((projectStats.totalExpenses / projectStats.totalPayments) * 100) : 0}%</strong>
+                  </div>
+                  <div className={styles.progressBarBg}>
+                    <div 
+                      className={styles.progressBarFill} 
+                      style={{ 
+                        width: `${Math.min(projectStats.totalPayments > 0 ? (projectStats.totalExpenses / projectStats.totalPayments) * 100 : 0, 100)}%`,
+                        backgroundColor: 'var(--danger)'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Group 3: Profitability */}
+              <div className={styles.reportSubCard} style={{ gridColumn: '1 / -1' }}>
+                <h4 className={styles.subCardTitle}>📈 LỢI NHUẬN THỰC THẾ & DỰ KIẾN</h4>
+                <div className={styles.profitHighlightGrid}>
+                  <div className={styles.profitBox}>
+                    <span className={styles.profitBoxLabel}>Lợi nhuận thực tế hiện tại (Tiền mặt đã thu - Đã chi)</span>
+                    <strong className={styles.profitBoxVal} style={{ color: projectStats.actualProfit >= 0 ? 'var(--secondary)' : 'var(--danger)' }}>
+                      {formatVND(projectStats.actualProfit)}
+                    </strong>
+                  </div>
+                  <div className={styles.profitBox}>
+                    <span className={styles.profitBoxLabel}>Lợi nhuận ước tính khi bàn giao (Giá trị thầu - Đã chi)</span>
+                    <strong className={styles.profitBoxVal} style={{ color: projectStats.projectedProfit >= 0 ? 'var(--primary)' : 'var(--danger)' }}>
+                      {formatVND(projectStats.projectedProfit)}
+                    </strong>
+                  </div>
                 </div>
               </div>
             </div>
@@ -537,7 +534,7 @@ export default function ProjectsView() {
             {/* Record Revenue card */}
             <div className={`${styles.actionCard} glass-card`}>
               <div className={styles.actionCardHeader}>
-                <h3 className={styles.actionCardTitle}>Thu tiền chủ đầu tư</h3>
+                <h3 className={styles.actionCardTitle}>Ghi nhận thu tiền chủ nhà</h3>
                 <button 
                   onClick={() => setShowPaymentForm(!showPaymentForm)}
                   className={styles.btnToggleForm}
@@ -620,40 +617,25 @@ export default function ProjectsView() {
 
               {showExpenseForm ? (
                 <form onSubmit={handleAddExpense} className={styles.actionForm}>
-                  <div className={styles.formRow}>
-                    <div className={styles.formGroup}>
-                      <label className={styles.inputLabel}>Loại chi phí</label>
-                      <select 
-                        value={expType}
-                        onChange={(e) => setExpType(e.target.value)}
-                        className={styles.input}
-                      >
-                        <option value="materials">🧱 Vật liệu xây dựng</option>
-                        <option value="labor">👷 Nhân công / Tổ thợ</option>
-                        <option value="other">⚙️ Thiết bị / Khác</option>
-                      </select>
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.inputLabel}>Thành viên chi trả</label>
-                      <select 
-                        value={expMember}
-                        onChange={(e) => setExpMember(e.target.value)}
-                        className={styles.input}
-                      >
-                        {members.map(m => (
-                          <option key={m.id} value={m.id}>{m.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.inputLabel}>Loại chi phí công trình</label>
+                    <select 
+                      value={expType}
+                      onChange={(e) => setExpType(e.target.value)}
+                      className={styles.input}
+                    >
+                      <option value="materials">🧱 Vật liệu xây dựng (Vật tư)</option>
+                      <option value="labor">👷 Nhân công / Tổ thợ</option>
+                      <option value="other">⚙️ Thiết bị / Chi phí khác</option>
+                    </select>
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.inputLabel}>Nội dung chi tiết (Vật tư/Cửa hàng/Nhân công)</label>
+                    <label className={styles.inputLabel}>Nội dung chi tiết (Cửa hàng / Người nhận)</label>
                     <input 
                       type="text" 
                       required 
-                      placeholder="Ví dụ: Cát đá xây tô - Đại lý A, Tạm ứng tổ thợ xây..."
+                      placeholder="Ví dụ: Mua thép Pomina - Đại lý sắt thép, Trả lương thợ nề..."
                       value={expDesc}
                       onChange={(e) => setExpDesc(e.target.value)}
                       className={styles.input}
@@ -674,27 +656,14 @@ export default function ProjectsView() {
                     </div>
 
                     <div className={styles.formGroup}>
-                      <label className={styles.inputLabel}>Danh mục hệ thống (Thống kê)</label>
-                      <select 
-                        value={expCategory}
-                        onChange={(e) => setExpCategory(e.target.value)}
+                      <label className={styles.inputLabel}>Ngày chi phí</label>
+                      <input 
+                        type="date" 
+                        value={expDate}
+                        onChange={(e) => setExpDate(e.target.value)}
                         className={styles.input}
-                      >
-                        {categories.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.inputLabel}>Ngày chi phí</label>
-                    <input 
-                      type="date" 
-                      value={expDate}
-                      onChange={(e) => setExpDate(e.target.value)}
-                      className={styles.input}
-                    />
                   </div>
 
                   <button type="submit" className={styles.btnSaveAction}>Lưu chi phí</button>
