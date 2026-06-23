@@ -144,7 +144,21 @@ button, input, select, textarea {
   }
 }
 
-/* Fix date input height issues especially on iOS and WebKit */
+/* Fix date input height/width/padding issues especially on iOS and WebKit */
 input[type="date"] {
   min-height: 42px;
+  box-sizing: border-box !important;
+}
+
+/* Ensure calendar picker icon is visible and matches theme styles */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: block !important;
+  cursor: pointer;
+  opacity: 0.8;
+  filter: var(--date-icon-filter, none);
+}
+
+/* Invert date icon for visibility in dark mode */
+[data-theme='dark'] {
+  --date-icon-filter: invert(0.85);
 }
