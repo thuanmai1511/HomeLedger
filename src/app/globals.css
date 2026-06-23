@@ -147,6 +147,8 @@ button, input, select, textarea {
 /* Fix date input height/width/padding issues especially on iOS and WebKit */
 input[type="date"] {
   min-height: 42px;
+  -webkit-appearance: none;
+  appearance: none;
   box-sizing: border-box !important;
 }
 
