@@ -144,10 +144,7 @@ button, input, select, textarea {
   }
 }
 
-/* Fix date input width/height issues especially on iOS and WebKit */
+/* Fix date input height issues especially on iOS and WebKit */
 input[type="date"] {
   min-height: 42px;
-  width: 100%;
-  max-width: 280px;
-  box-sizing: border-box;
 }
