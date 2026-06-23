@@ -712,7 +712,12 @@ export function StoreProvider({ children }) {
       delete dbH.totalShares;
       delete dbH.startDate;
       const { error } = await supabase.from('huis').insert(dbH);
-      if (error) console.error("Lỗi khi thêm dây hụi vào Supabase:", error);
+      if (error) {
+        console.error("Lỗi khi thêm dây hụi vào Supabase:", error);
+        if (typeof window !== 'undefined') {
+          alert("Lỗi khi thêm dây hụi vào Supabase: " + (error.message || JSON.stringify(error)));
+        }
+      }
     }
   };
 
@@ -732,7 +737,12 @@ export function StoreProvider({ children }) {
       delete dbH.totalShares;
       delete dbH.startDate;
       const { error } = await supabase.from('huis').update(dbH).eq('id', updatedH.id);
-      if (error) console.error("Lỗi khi cập nhật dây hụi trên Supabase:", error);
+      if (error) {
+        console.error("Lỗi khi cập nhật dây hụi trên Supabase:", error);
+        if (typeof window !== 'undefined') {
+          alert("Lỗi khi cập nhật dây hụi trên Supabase: " + (error.message || JSON.stringify(error)));
+        }
+      }
     }
   };
 
@@ -740,7 +750,12 @@ export function StoreProvider({ children }) {
     setAppState(prev => ({ ...prev, huis: prev.huis.filter(h => h.id !== id) }));
     if (supabase) {
       const { error } = await supabase.from('huis').delete().eq('id', id);
-      if (error) console.error("Lỗi khi xóa dây hụi trên Supabase:", error);
+      if (error) {
+        console.error("Lỗi khi xóa dây hụi trên Supabase:", error);
+        if (typeof window !== 'undefined') {
+          alert("Lỗi khi xóa dây hụi trên Supabase: " + (error.message || JSON.stringify(error)));
+        }
+      }
     }
   };
 
