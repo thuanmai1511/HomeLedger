@@ -181,6 +181,9 @@ export function StoreProvider({ children }) {
             }));
           }
 
+          const savedTheme = localStorage.getItem('hl_theme') || 'dark';
+          document.documentElement.setAttribute('data-theme', savedTheme);
+
           const contractorMode = localStorage.getItem('hl_contractor_mode') === 'true';
 
           setAppState({
