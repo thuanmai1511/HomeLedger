@@ -692,6 +692,234 @@ select.input {
   padding: 20px 0;
 }
 
+/* Tabs styling */
+.tabContainer {
+  display: flex;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 2px;
+  margin-bottom: 20px;
+}
+
+.tabBtn, .activeTabBtn {
+  padding: 10px 20px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.tabBtn:hover {
+  color: var(--text-primary);
+  border-bottom-color: var(--border-color);
+}
+
+.activeTabBtn {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* Attendance panel styles */
+.attendanceWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.attendanceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.weekNavigator {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.weekRangeText {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+
+.btnNavMini {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background var(--transition-fast);
+}
+
+.btnNavMini:hover {
+  background: var(--bg-hover);
+}
+
+.btnTodayMini {
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btnTodayMini:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.attendanceTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.attendanceTable th, 
+.attendanceTable td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.attendanceTable th {
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: rgba(var(--bg-secondary-rgb), 0.3);
+}
+
+.dateSub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.workerNameCell {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+/* Day attendance buttons */
+.attBtn {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 78px;
+  text-align: center;
+}
+
+.attAbsent {
+  background: rgba(var(--text-muted-rgb), 0.1);
+  color: var(--text-secondary);
+}
+
+.attAbsent:hover {
+  background: rgba(var(--text-muted-rgb), 0.2);
+}
+
+.attHalf {
+  background: rgba(var(--warning-rgb), 0.15);
+  color: var(--warning);
+}
+
+.attHalf:hover {
+  background: rgba(var(--warning-rgb), 0.25);
+}
+
+.attFull {
+  background: rgba(var(--secondary-rgb), 0.15);
+  color: var(--secondary);
+}
+
+.attFull:hover {
+  background: rgba(var(--secondary-rgb), 0.25);
+}
+
+.totalDaysCell {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.weeklyWageCell {
+  font-size: 0.95rem;
+  color: var(--secondary);
+}
+
+.workerActions {
+  display: flex;
+  gap: 8px;
+}
+
+.btnPayWage {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.btnPayWage:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btnPayWage:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btnDeleteWorker {
+  background: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(var(--danger-rgb), 0.2);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btnDeleteWorker:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.emptyTableText {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 30px 0 !important;
+}
+
 /* Mobile-first optimizations */
 @media (max-width: 576px) {
   .title {
@@ -770,6 +998,38 @@ select.input {
     padding: 8px 12px;
     font-size: 0.88rem;
   }
+
+  /* Mobile timesheet overrides */
+  .tabBtn, .activeTabBtn {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+
+  .attendanceHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .weekNavigator {
+    gap: 8px;
+  }
+
+  .weekRangeText {
+    font-size: 0.85rem;
+  }
+
+  .attendanceTable th, 
+  .attendanceTable td {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
+  .attBtn {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    width: 68px;
+  }
 }
 
 @media (max-width: 375px) {
@@ -783,5 +1043,16 @@ select.input {
   
   .progressBarBg {
     height: 4px;
+  }
+
+  .attendanceTable th, 
+  .attendanceTable td {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+
+  .attBtn {
+    width: 60px;
+    padding: 4px 6px;
   }
 }
