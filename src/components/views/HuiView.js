@@ -334,7 +334,7 @@ export default function HuiView() {
                       {isCompleted ? (
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                           <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                            Đã đóng: <strong style={{ color: 'var(--text-primary)' }}>{formatVND(r.amountPaid)}</strong> ({r.datePaid})
+                            Đã đóng: <strong style={{ color: 'var(--text-primary)' }}>{formatVND(r.amountPaid)}</strong>
                           </span>
                           <button 
                             onClick={() => handleResetRound(selectedHui, roundNum)}

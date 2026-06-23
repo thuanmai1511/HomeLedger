@@ -1,9 +1,35 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Edit2, Check, X, AlertCircle, AlertTriangle } from 'lucide-react';
+import { 
+  Edit2, 
+  Check, 
+  X, 
+  AlertCircle, 
+  AlertTriangle,
+  Utensils,
+  FileText,
+  Car,
+  ShoppingBag,
+  Sparkles,
+  HeartPulse,
+  HelpCircle,
+  Wallet,
+  TrendingUp,
+  PiggyBank
+} from 'lucide-react';
 import { useStore } from '@/lib/store';
 import styles from './BudgetsView.module.css';
+
+const IconMap = {
+  Utensils,
+  FileText,
+  Car,
+  ShoppingBag,
+  Sparkles,
+  HeartPulse,
+  HelpCircle
+};
 
 export default function BudgetsView() {
   const { categories, transactions, updateCategoryBudget } = useStore();
@@ -95,23 +121,38 @@ export default function BudgetsView() {
         </div>
 
         <div className={styles.overviewGrid}>
-          <div className={styles.overviewStat}>
-            <span className={styles.statLabel}>Tổng ngân sách đề ra</span>
-            <span className={styles.statValBudget}>{formatVND(totalStats.totalBudget)}</span>
+          <div className={`${styles.overviewCardMini} glass-card`}>
+            <div className={styles.iconWrapper} style={{ background: 'rgba(99, 102, 241, 0.12)', color: 'var(--primary)' }}>
+              <Wallet size={20} />
+            </div>
+            <div className={styles.statContent}>
+              <span className={styles.statLabel}>Hạn mức tổng</span>
+              <span className={styles.statValBudget}>{formatVND(totalStats.totalBudget)}</span>
+            </div>
           </div>
 
-          <div className={styles.overviewStat}>
-            <span className={styles.statLabel}>Tổng chi tiêu thực tế</span>
-            <span className={styles.statValSpent} style={{ color: totalStats.totalSpent > totalStats.totalBudget ? 'var(--danger)' : 'var(--primary)' }}>
-              {formatVND(totalStats.totalSpent)}
-            </span>
+          <div className={`${styles.overviewCardMini} glass-card`}>
+            <div className={styles.iconWrapper} style={{ background: totalStats.totalSpent > totalStats.totalBudget ? 'rgba(239, 68, 68, 0.12)' : 'rgba(52, 211, 153, 0.12)', color: totalStats.totalSpent > totalStats.totalBudget ? 'var(--danger)' : 'var(--secondary)' }}>
+              <TrendingUp size={20} />
+            </div>
+            <div className={styles.statContent}>
+              <span className={styles.statLabel}>Thực chi tiêu</span>
+              <span className={styles.statValSpent} style={{ color: totalStats.totalSpent > totalStats.totalBudget ? 'var(--danger)' : 'var(--primary)' }}>
+                {formatVND(totalStats.totalSpent)}
+              </span>
+            </div>
           </div>
 
-          <div className={styles.overviewStat}>
-            <span className={styles.statLabel}>Còn lại của tháng</span>
-            <span className={`${styles.statValRemain} ${totalStats.totalBudget - totalStats.totalSpent >= 0 ? styles.positiveText : styles.negativeText}`}>
-              {formatVND(totalStats.totalBudget - totalStats.totalSpent)}
-            </span>
+          <div className={`${styles.overviewCardMini} glass-card`}>
+            <div className={styles.iconWrapper} style={{ background: totalStats.totalBudget - totalStats.totalSpent >= 0 ? 'rgba(52, 211, 153, 0.12)' : 'rgba(239, 68, 68, 0.12)', color: totalStats.totalBudget - totalStats.totalSpent >= 0 ? 'var(--secondary)' : 'var(--danger)' }}>
+              <PiggyBank size={20} />
+            </div>
+            <div className={styles.statContent}>
+              <span className={styles.statLabel}>Còn lại của tháng</span>
+              <span className={`${styles.statValRemain} ${totalStats.totalBudget - totalStats.totalSpent >= 0 ? styles.positiveText : styles.negativeText}`}>
+                {formatVND(totalStats.totalBudget - totalStats.totalSpent)}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -155,8 +196,15 @@ export default function BudgetsView() {
             <div key={c.id} className={`${styles.catCard} glass-card`}>
               <div className={styles.catCardHeader}>
                 <div className={styles.catTitle}>
-                  <span className={styles.catColorIndicator} style={{ background: c.color }} />
-                  <span className={styles.catName}>{c.name}</span>
+                  <div className={styles.iconBox} style={{ background: `${c.color}15`, color: c.color }}>
+                    {React.createElement(IconMap[c.icon] || HelpCircle, { size: 18 })}
+                  </div>
+                  <div className={styles.catMeta}>
+                    <span className={styles.catName}>{c.name}</span>
+                    <span className={styles.spentPercentageBadge} style={{ background: `${statusColor}15`, color: statusColor }}>
+                      {percent}%
+                    </span>
+                  </div>
                 </div>
 
                 {isEditing ? (
@@ -218,10 +266,10 @@ export default function BudgetsView() {
                 </div>
                 
                 <div className={styles.progressFooter}>
-                  <span>{percent}% đã dùng</span>
+                  <span>Đã dùng {percent}%</span>
                   {isOver && (
                     <span className={styles.alertText} style={{ color: 'var(--danger)' }}>
-                      <AlertCircle size={12} /> Quá chi!
+                      <AlertCircle size={12} /> Quá hạn mức!
                     </span>
                   )}
                   {isWarning && (
