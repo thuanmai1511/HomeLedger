@@ -16,13 +16,14 @@ import {
   Plus,
   MoreHorizontal,
   X,
-  Notebook
+  Notebook,
+  Briefcase
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import styles from './Navigation.module.css';
 
 export default function Navigation({ activeTab, setActiveTab, onOpenAddTransaction }) {
-  const { theme, toggleTheme, members } = useStore();
+  const { theme, toggleTheme, members, contractorMode } = useStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const navItems = [
@@ -34,6 +35,7 @@ export default function Navigation({ activeTab, setActiveTab, onOpenAddTransacti
     { id: 'recurring', label: 'Định kỳ', icon: CalendarClock },
     { id: 'debts', label: 'Khoản nợ', icon: Coins },
     { id: 'huis', label: 'Dây Hụi', icon: Notebook },
+    ...(contractorMode ? [{ id: 'projects', label: 'Công trình', icon: Briefcase }] : []),
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
 
@@ -52,6 +54,7 @@ export default function Navigation({ activeTab, setActiveTab, onOpenAddTransacti
     { id: 'recurring', label: 'Định kỳ', icon: CalendarClock },
     { id: 'debts', label: 'Khoản nợ', icon: Coins },
     { id: 'huis', label: 'Dây Hụi', icon: Notebook },
+    ...(contractorMode ? [{ id: 'projects', label: 'Công trình', icon: Briefcase }] : []),
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
 

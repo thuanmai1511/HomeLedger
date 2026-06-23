@@ -67,6 +67,8 @@ export function StoreProvider({ children }) {
     recurring: INITIAL_RECURRING,
     debts: INITIAL_DEBTS,
     huis: [],
+    projects: [],
+    contractorMode: false,
     theme: 'dark'
   });
   
@@ -83,7 +85,8 @@ export function StoreProvider({ children }) {
             resGoals,
             resRecurring,
             resDebts,
-            resHuis
+            resHuis,
+            resProjects
           ] = await Promise.all([
             supabase.from('members').select('*'),
             supabase.from('categories').select('*'),
@@ -91,7 +94,8 @@ export function StoreProvider({ children }) {
             supabase.from('goals').select('*'),
             supabase.from('recurring').select('*'),
             supabase.from('debts').select('*'),
-            supabase.from('huis').select('*')
+            supabase.from('huis').select('*'),
+            supabase.from('projects').select('*')
           ]);
 
           if (resMembers.error) throw resMembers.error;
@@ -101,6 +105,7 @@ export function StoreProvider({ children }) {
           if (resRecurring.error) throw resRecurring.error;
           if (resDebts.error) throw resDebts.error;
           if (resHuis.error) throw resHuis.error;
+          if (resProjects.error) throw resProjects.error;
 
           let fetchedMembers = resMembers.data || [];
           let fetchedCategories = resCategories.data || [];
@@ -109,6 +114,7 @@ export function StoreProvider({ children }) {
           let fetchedRecurring = resRecurring.data || [];
           let fetchedDebts = resDebts.data || [];
           let fetchedHuis = resHuis.data || [];
+          let fetchedProjects = resProjects.data || [];
 
           if (fetchedMembers.length === 0 && fetchedCategories.length === 0) {
             console.log("Database trống, đang khởi tạo dữ liệu mẫu lên Supabase...");
@@ -167,10 +173,43 @@ export function StoreProvider({ children }) {
               paidAmount: d.paidamount,
               dueDate: d.duedate
             }));
+            fetchedProjects = fetchedProjects.map(p => ({
+              ...p,
+              contractValue: Number(p.contractvalue),
+              startDate: p.startdate,
+              endDate: p.enddate
+            }));
           }
 
           const savedTheme = localStorage.getItem('hl_theme') || 'dark';
           document.documentElement.setAttribute('data-theme', savedTheme);
+
+          // Sync local storage projects if Supabase is empty
+          let finalProjects = [];
+          if (fetchedProjects.length > 0) {
+            finalProjects = fetchedProjects;
+            localStorage.setItem('hl_projects', JSON.stringify(finalProjects));
+          } else {
+            const savedProjects = localStorage.getItem('hl_projects');
+            finalProjects = savedProjects ? JSON.parse(savedProjects) : [];
+            if (finalProjects.length > 0) {
+              const dbProjects = finalProjects.map(p => ({
+                id: p.id,
+                name: p.name,
+                client: p.client,
+                location: p.location,
+                contractvalue: p.contractValue,
+                startdate: p.startDate,
+                enddate: p.endDate,
+                status: p.status,
+                payments: p.payments || [],
+                expenses: p.expenses || []
+              }));
+              await supabase.from('projects').insert(dbProjects);
+            }
+          }
+
+          const contractorMode = localStorage.getItem('hl_contractor_mode') === 'true';
 
           setAppState({
             members: fetchedMembers,
@@ -180,6 +219,8 @@ export function StoreProvider({ children }) {
             recurring: fetchedRecurring,
             debts: fetchedDebts,
             huis: fetchedHuis,
+            projects: finalProjects,
+            contractorMode,
             theme: savedTheme
           });
           setIsLoaded(true);
@@ -193,6 +234,10 @@ export function StoreProvider({ children }) {
         const savedTheme = localStorage.getItem('hl_theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
 
+        const savedProjects = localStorage.getItem('hl_projects');
+        const parsedProjects = savedProjects ? JSON.parse(savedProjects) : [];
+        const contractorMode = localStorage.getItem('hl_contractor_mode') === 'true';
+
         setAppState({
           members: INITIAL_MEMBERS,
           categories: INITIAL_CATEGORIES,
@@ -201,6 +246,8 @@ export function StoreProvider({ children }) {
           recurring: INITIAL_RECURRING,
           debts: INITIAL_DEBTS,
           huis: [],
+          projects: parsedProjects,
+          contractorMode,
           theme: savedTheme
         });
         setIsLoaded(true);
@@ -759,6 +806,83 @@ export function StoreProvider({ children }) {
     }
   };
 
+  const toggleContractorMode = () => {
+    setAppState(prev => {
+      const nextMode = !prev.contractorMode;
+      localStorage.setItem('hl_contractor_mode', String(nextMode));
+      return { ...prev, contractorMode: nextMode };
+    });
+  };
+
+  const addProject = async (p) => {
+    const newP = {
+      ...p,
+      id: 'p-' + Date.now(),
+      payments: p.payments || [],
+      expenses: p.expenses || []
+    };
+
+    if (supabase) {
+      const dbP = {
+        id: newP.id,
+        name: newP.name,
+        client: newP.client,
+        location: newP.location,
+        contractvalue: newP.contractValue,
+        startdate: newP.startDate,
+        enddate: newP.endDate,
+        status: newP.status,
+        payments: newP.payments,
+        expenses: newP.expenses
+      };
+      const { error } = await supabase.from('projects').insert(dbP);
+      if (error) console.error("Lỗi khi thêm dự án vào Supabase:", error);
+    }
+
+    setAppState(prev => {
+      const nextProjects = [...prev.projects, newP];
+      localStorage.setItem('hl_projects', JSON.stringify(nextProjects));
+      return { ...prev, projects: nextProjects };
+    });
+  };
+
+  const updateProject = async (updatedP) => {
+    if (supabase) {
+      const dbP = {
+        name: updatedP.name,
+        client: updatedP.client,
+        location: updatedP.location,
+        contractvalue: updatedP.contractValue,
+        startdate: updatedP.startDate,
+        enddate: updatedP.endDate,
+        status: updatedP.status,
+        payments: updatedP.payments,
+        expenses: updatedP.expenses
+      };
+      const { error } = await supabase.from('projects').update(dbP).eq('id', updatedP.id);
+      if (error) console.error("Lỗi khi cập nhật dự án trên Supabase:", error);
+    }
+
+    setAppState(prev => {
+      const nextProjects = prev.projects.map(p => p.id === updatedP.id ? updatedP : p);
+      localStorage.setItem('hl_projects', JSON.stringify(nextProjects));
+      return { ...prev, projects: nextProjects };
+    });
+  };
+
+  const deleteProject = async (id) => {
+    if (supabase) {
+      const { error } = await supabase.from('projects').delete().eq('id', id);
+      if (error) console.error("Lỗi khi xóa dự án trên Supabase:", error);
+    }
+
+    setAppState(prev => {
+      const nextProjects = prev.projects.filter(p => p.id !== id);
+      localStorage.setItem('hl_projects', JSON.stringify(nextProjects));
+      return { ...prev, projects: nextProjects };
+    });
+  };
+
   return (
     <StoreContext.Provider value={{
       isLoaded,
@@ -769,6 +893,8 @@ export function StoreProvider({ children }) {
       recurring: appState.recurring,
       debts: appState.debts,
       huis: appState.huis,
+      projects: appState.projects,
+      contractorMode: appState.contractorMode,
       theme: appState.theme,
       toggleTheme,
       addTransaction,
@@ -790,6 +916,10 @@ export function StoreProvider({ children }) {
       addHui,
       updateHui,
       deleteHui,
+      toggleContractorMode,
+      addProject,
+      updateProject,
+      deleteProject,
       resetAllData,
       clearAllData,
       importAllData

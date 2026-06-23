@@ -3,7 +3,8 @@
 import React from 'react';
 import { 
   Sun, 
-  Moon
+  Moon,
+  Briefcase
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import styles from './SettingsView.module.css';
@@ -11,7 +12,9 @@ import styles from './SettingsView.module.css';
 export default function SettingsView() {
   const { 
     theme, 
-    toggleTheme
+    toggleTheme,
+    contractorMode,
+    toggleContractorMode
   } = useStore();
 
   return (
@@ -48,6 +51,31 @@ export default function SettingsView() {
             >
               <Moon size={18} />
               <span>Giao diện tối</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Contractor Mode Settings */}
+        <div className={`${styles.settingCard} glass-card`}>
+          <h3 className={styles.cardTitle}>Chế độ Nhà thầu</h3>
+          <p className={styles.cardDesc}>Bật/tắt phân hệ quản lý công trình xây dựng và dòng tiền lãnh thầu chuyên nghiệp.</p>
+          
+          <div className={styles.themeToggleGroup}>
+            <button 
+              onClick={() => contractorMode && toggleContractorMode()} 
+              className={`${styles.themeBtn} ${!contractorMode ? styles.themeBtnActive : ''}`}
+              id="contractor-btn-off"
+            >
+              <span>Ẩn tính năng</span>
+            </button>
+            
+            <button 
+              onClick={() => !contractorMode && toggleContractorMode()} 
+              className={`${styles.themeBtn} ${contractorMode ? styles.themeBtnActive : ''}`}
+              id="contractor-btn-on"
+            >
+              <Briefcase size={18} />
+              <span>Hiện tính năng</span>
             </button>
           </div>
         </div>
