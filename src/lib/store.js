@@ -181,34 +181,6 @@ export function StoreProvider({ children }) {
             }));
           }
 
-          const savedTheme = localStorage.getItem('hl_theme') || 'dark';
-          document.documentElement.setAttribute('data-theme', savedTheme);
-
-          // Sync local storage projects if Supabase is empty
-          let finalProjects = [];
-          if (fetchedProjects.length > 0) {
-            finalProjects = fetchedProjects;
-            localStorage.setItem('hl_projects', JSON.stringify(finalProjects));
-          } else {
-            const savedProjects = localStorage.getItem('hl_projects');
-            finalProjects = savedProjects ? JSON.parse(savedProjects) : [];
-            if (finalProjects.length > 0) {
-              const dbProjects = finalProjects.map(p => ({
-                id: p.id,
-                name: p.name,
-                client: p.client,
-                location: p.location,
-                contractvalue: p.contractValue,
-                startdate: p.startDate,
-                enddate: p.endDate,
-                status: p.status,
-                payments: p.payments || [],
-                expenses: p.expenses || []
-              }));
-              await supabase.from('projects').insert(dbProjects);
-            }
-          }
-
           const contractorMode = localStorage.getItem('hl_contractor_mode') === 'true';
 
           setAppState({
@@ -219,7 +191,7 @@ export function StoreProvider({ children }) {
             recurring: fetchedRecurring,
             debts: fetchedDebts,
             huis: fetchedHuis,
-            projects: finalProjects,
+            projects: fetchedProjects,
             contractorMode,
             theme: savedTheme
           });
@@ -234,8 +206,6 @@ export function StoreProvider({ children }) {
         const savedTheme = localStorage.getItem('hl_theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
 
-        const savedProjects = localStorage.getItem('hl_projects');
-        const parsedProjects = savedProjects ? JSON.parse(savedProjects) : [];
         const contractorMode = localStorage.getItem('hl_contractor_mode') === 'true';
 
         setAppState({
@@ -246,7 +216,7 @@ export function StoreProvider({ children }) {
           recurring: INITIAL_RECURRING,
           debts: INITIAL_DEBTS,
           huis: [],
-          projects: parsedProjects,
+          projects: [],
           contractorMode,
           theme: savedTheme
         });
@@ -841,7 +811,6 @@ export function StoreProvider({ children }) {
 
     setAppState(prev => {
       const nextProjects = [...prev.projects, newP];
-      localStorage.setItem('hl_projects', JSON.stringify(nextProjects));
       return { ...prev, projects: nextProjects };
     });
   };
@@ -865,7 +834,6 @@ export function StoreProvider({ children }) {
 
     setAppState(prev => {
       const nextProjects = prev.projects.map(p => p.id === updatedP.id ? updatedP : p);
-      localStorage.setItem('hl_projects', JSON.stringify(nextProjects));
       return { ...prev, projects: nextProjects };
     });
   };
@@ -878,7 +846,6 @@ export function StoreProvider({ children }) {
 
     setAppState(prev => {
       const nextProjects = prev.projects.filter(p => p.id !== id);
-      localStorage.setItem('hl_projects', JSON.stringify(nextProjects));
       return { ...prev, projects: nextProjects };
     });
   };

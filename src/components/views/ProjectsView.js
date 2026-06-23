@@ -275,14 +275,14 @@ export default function ProjectsView() {
           {/* Add Project Form */}
           {showAddForm && (
             <section className={`${styles.formCard} glass-card`}>
-              <h3 className={styles.formTitle}>Đăng ký công trình nhận thầu mới</h3>
+              <h3 className={styles.formTitle}>Thêm công trình mới</h3>
               <form onSubmit={handleCreateProject} className={styles.form}>
                 <div className={styles.formGroup}>
                   <label className={styles.inputLabel}>Tên công trình</label>
                   <input 
                     type="text" 
                     required 
-                    placeholder="Ví dụ: Xây dựng nhà phố Q2 - Anh Tuấn"
+                    placeholder="Ví dụ: Nhà phố Q2 - A.Tuấn"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className={styles.input}
@@ -291,10 +291,10 @@ export default function ProjectsView() {
 
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
-                    <label className={styles.inputLabel}>Chủ đầu tư (Tên khách hàng)</label>
+                    <label className={styles.inputLabel}>Chủ đầu tư</label>
                     <input 
                       type="text" 
-                      placeholder="Ví dụ: Nguyễn Văn Tuấn"
+                      placeholder="Tên khách hàng"
                       value={client}
                       onChange={(e) => setClient(e.target.value)}
                       className={styles.input}
@@ -302,10 +302,10 @@ export default function ProjectsView() {
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.inputLabel}>Địa điểm xây dựng</label>
+                    <label className={styles.inputLabel}>Địa điểm</label>
                     <input 
                       type="text" 
-                      placeholder="Ví dụ: Thảo Điền, Quận 2"
+                      placeholder="Ví dụ: Quận 2"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       className={styles.input}
@@ -315,7 +315,7 @@ export default function ProjectsView() {
 
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
-                    <label className={styles.inputLabel}>Giá trị hợp đồng thầu (VND)</label>
+                    <label className={styles.inputLabel}>Giá trị HĐ (VND)</label>
                     <input 
                       type="text" 
                       required 
@@ -327,7 +327,7 @@ export default function ProjectsView() {
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.inputLabel}>Ngày khởi công</label>
+                    <label className={styles.inputLabel}>Khởi công</label>
                     <input 
                       type="date" 
                       value={startDate}
@@ -338,7 +338,7 @@ export default function ProjectsView() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.inputLabel}>Ngày hoàn thành dự kiến</label>
+                  <label className={styles.inputLabel}>Ngày hoàn thành</label>
                   <input 
                     type="date" 
                     value={endDate}
@@ -426,24 +426,24 @@ export default function ProjectsView() {
           {/* Upgraded Financial calculations (P&L Card) */}
           <section className={`${styles.overviewCard} glass-card`}>
             <div className={styles.reportSectionHeader}>
-              <h3 className={styles.cardTitle}>Báo cáo tài chính & Hiệu quả dự án</h3>
-              <span className={styles.badgeReport}>Công trình độc lập</span>
+              <h3 className={styles.cardTitle}>Hiệu quả dự án</h3>
+              <span className={styles.badgeReport}>Độc lập</span>
             </div>
 
             <div className={styles.reportMainSections}>
               {/* Group 1: Revenue & Contract status */}
               <div className={styles.reportSubCard}>
-                <h4 className={styles.subCardTitle}>💳 DOANH THU & HỢP ĐỒNG</h4>
+                <h4 className={styles.subCardTitle}>💳 HỢP ĐỒNG & THU HỒI</h4>
                 <div className={styles.subCardStat}>
-                  <span className={styles.statLabel}>Giá trị hợp đồng ký kết</span>
+                  <span className={styles.statLabel}>Giá trị HĐ</span>
                   <strong className={styles.statVal}>{formatVND(selectedProject.contractValue)}</strong>
                 </div>
                 <div className={styles.subCardStat}>
-                  <span className={styles.statLabel}>Đã thu hồi (Doanh thu thực tế)</span>
+                  <span className={styles.statLabel}>Đã thu (Thực thu)</span>
                   <strong className={styles.statVal} style={{ color: 'var(--secondary)' }}>{formatVND(projectStats.totalPayments)}</strong>
                 </div>
                 <div className={styles.subCardStat}>
-                  <span className={styles.statLabel}>Chủ nhà còn nợ (Công nợ)</span>
+                  <span className={styles.statLabel}>Còn nợ (Công nợ)</span>
                   <strong className={styles.statVal} style={{ color: projectStats.remainingDebt > 0 ? 'var(--warning)' : 'var(--text-muted)' }}>
                     {formatVND(projectStats.remainingDebt)}
                   </strong>
@@ -452,7 +452,7 @@ export default function ProjectsView() {
                 {/* Progress bar */}
                 <div className={styles.progressContainer}>
                   <div className={styles.progressLabel}>
-                    <span>Tiến độ thu tiền:</span>
+                    <span>Tiến độ thu:</span>
                     <strong>{selectedProject.contractValue > 0 ? Math.round((projectStats.totalPayments / selectedProject.contractValue) * 100) : 0}%</strong>
                   </div>
                   <div className={styles.progressBarBg}>
@@ -471,21 +471,21 @@ export default function ProjectsView() {
               <div className={styles.reportSubCard}>
                 <h4 className={styles.subCardTitle}>🧱 CHI PHÍ ĐÃ CHI</h4>
                 <div className={styles.subCardStat}>
-                  <span className={styles.statLabel}>Tổng chi phí xây dựng đã chi</span>
+                  <span className={styles.statLabel}>Tổng chi</span>
                   <strong className={styles.statVal} style={{ color: 'var(--danger)' }}>{formatVND(projectStats.totalExpenses)}</strong>
                 </div>
 
                 <div className={styles.costBreakdownMini}>
                   <div className={styles.breakdownRow}>
-                    <span>🧱 Vật liệu xây tô</span>
+                    <span>🧱 Vật tư</span>
                     <strong>{formatVND(projectStats.materialsCost)}</strong>
                   </div>
                   <div className={styles.breakdownRow}>
-                    <span>👷 Nhân công & Tổ thợ</span>
+                    <span>👷 Nhân công thợ</span>
                     <strong>{formatVND(projectStats.laborCost)}</strong>
                   </div>
                   <div className={styles.breakdownRow}>
-                    <span>⚙️ Máy móc & Khác</span>
+                    <span>⚙️ Thiết bị & khác</span>
                     <strong>{formatVND(projectStats.otherCost)}</strong>
                   </div>
                 </div>
@@ -493,7 +493,7 @@ export default function ProjectsView() {
                 {/* Expense/Revenue Ratio */}
                 <div className={styles.progressContainer} style={{ marginTop: '14px' }}>
                   <div className={styles.progressLabel}>
-                    <span>Tỉ lệ chi phí / Doanh thu:</span>
+                    <span>Tỉ lệ Chi/Thu:</span>
                     <strong>{projectStats.totalPayments > 0 ? Math.round((projectStats.totalExpenses / projectStats.totalPayments) * 100) : 0}%</strong>
                   </div>
                   <div className={styles.progressBarBg}>
@@ -510,16 +510,16 @@ export default function ProjectsView() {
 
               {/* Group 3: Profitability */}
               <div className={styles.reportSubCard} style={{ gridColumn: '1 / -1' }}>
-                <h4 className={styles.subCardTitle}>📈 LỢI NHUẬN THỰC THẾ & DỰ KIẾN</h4>
+                <h4 className={styles.subCardTitle}>📈 LỢI NHUẬN DỰ ÁN</h4>
                 <div className={styles.profitHighlightGrid}>
                   <div className={styles.profitBox}>
-                    <span className={styles.profitBoxLabel}>Lợi nhuận thực tế hiện tại (Tiền mặt đã thu - Đã chi)</span>
+                    <span className={styles.profitBoxLabel}>Lợi thực tế (Thu - Chi)</span>
                     <strong className={styles.profitBoxVal} style={{ color: projectStats.actualProfit >= 0 ? 'var(--secondary)' : 'var(--danger)' }}>
                       {formatVND(projectStats.actualProfit)}
                     </strong>
                   </div>
                   <div className={styles.profitBox}>
-                    <span className={styles.profitBoxLabel}>Lợi nhuận ước tính khi bàn giao (Giá trị thầu - Đã chi)</span>
+                    <span className={styles.profitBoxLabel}>Lợi ước tính (HĐ - Chi)</span>
                     <strong className={styles.profitBoxVal} style={{ color: projectStats.projectedProfit >= 0 ? 'var(--primary)' : 'var(--danger)' }}>
                       {formatVND(projectStats.projectedProfit)}
                     </strong>
@@ -534,23 +534,23 @@ export default function ProjectsView() {
             {/* Record Revenue card */}
             <div className={`${styles.actionCard} glass-card`}>
               <div className={styles.actionCardHeader}>
-                <h3 className={styles.actionCardTitle}>Ghi nhận thu tiền chủ nhà</h3>
+                <h3 className={styles.actionCardTitle}>Thu tiền chủ nhà</h3>
                 <button 
                   onClick={() => setShowPaymentForm(!showPaymentForm)}
                   className={styles.btnToggleForm}
                 >
-                  {showPaymentForm ? 'Hủy' : 'Ghi nhận đợt thu'}
+                  {showPaymentForm ? 'Hủy' : 'Ghi nhận thu'}
                 </button>
               </div>
 
               {showPaymentForm ? (
                 <form onSubmit={handleAddPayment} className={styles.actionForm}>
                   <div className={styles.formGroup}>
-                    <label className={styles.inputLabel}>Nội dung đợt thu (Giai đoạn)</label>
+                    <label className={styles.inputLabel}>Nội dung thu</label>
                     <input 
                       type="text" 
                       required 
-                      placeholder="Ví dụ: Tạm ứng đợt 1, Xong sàn 1..."
+                      placeholder="Ví dụ: Đợt 1, Xong sàn 1..."
                       value={payDesc}
                       onChange={(e) => setPayDesc(e.target.value)}
                       className={styles.input}
@@ -558,7 +558,7 @@ export default function ProjectsView() {
                   </div>
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
-                      <label className={styles.inputLabel}>Số tiền nhận (VND)</label>
+                      <label className={styles.inputLabel}>Số tiền nhận</label>
                       <input 
                         type="text" 
                         required 
@@ -569,7 +569,7 @@ export default function ProjectsView() {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label className={styles.inputLabel}>Ngày nhận tiền</label>
+                      <label className={styles.inputLabel}>Ngày nhận</label>
                       <input 
                         type="date" 
                         value={payDate}
@@ -606,36 +606,36 @@ export default function ProjectsView() {
             {/* Record Expense card */}
             <div className={`${styles.actionCard} glass-card`}>
               <div className={styles.actionCardHeader}>
-                <h3 className={styles.actionCardTitle}>Ghi nhận chi phí công trình</h3>
+                <h3 className={styles.actionCardTitle}>Ghi nhận chi phí</h3>
                 <button 
                   onClick={() => setShowExpenseForm(!showExpenseForm)}
                   className={styles.btnToggleForm}
                 >
-                  {showExpenseForm ? 'Hủy' : 'Ghi nhận chi phí'}
+                  {showExpenseForm ? 'Hủy' : 'Ghi nhận chi'}
                 </button>
               </div>
 
               {showExpenseForm ? (
                 <form onSubmit={handleAddExpense} className={styles.actionForm}>
                   <div className={styles.formGroup}>
-                    <label className={styles.inputLabel}>Loại chi phí công trình</label>
+                    <label className={styles.inputLabel}>Loại chi phí</label>
                     <select 
                       value={expType}
                       onChange={(e) => setExpType(e.target.value)}
                       className={styles.input}
                     >
-                      <option value="materials">🧱 Vật liệu xây dựng (Vật tư)</option>
-                      <option value="labor">👷 Nhân công / Tổ thợ</option>
-                      <option value="other">⚙️ Thiết bị / Chi phí khác</option>
+                      <option value="materials">🧱 Vật tư</option>
+                      <option value="labor">👷 Nhân công thợ</option>
+                      <option value="other">⚙️ Thiết bị & khác</option>
                     </select>
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label className={styles.inputLabel}>Nội dung chi tiết (Cửa hàng / Người nhận)</label>
+                    <label className={styles.inputLabel}>Nội dung chi</label>
                     <input 
                       type="text" 
                       required 
-                      placeholder="Ví dụ: Mua thép Pomina - Đại lý sắt thép, Trả lương thợ nề..."
+                      placeholder="Ví dụ: Mua thép Pomina, Trả lương thợ..."
                       value={expDesc}
                       onChange={(e) => setExpDesc(e.target.value)}
                       className={styles.input}
@@ -644,7 +644,7 @@ export default function ProjectsView() {
 
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
-                      <label className={styles.inputLabel}>Số tiền chi (VND)</label>
+                      <label className={styles.inputLabel}>Số tiền chi</label>
                       <input 
                         type="text" 
                         required 
@@ -656,7 +656,7 @@ export default function ProjectsView() {
                     </div>
 
                     <div className={styles.formGroup}>
-                      <label className={styles.inputLabel}>Ngày chi phí</label>
+                      <label className={styles.inputLabel}>Ngày chi</label>
                       <input 
                         type="date" 
                         value={expDate}

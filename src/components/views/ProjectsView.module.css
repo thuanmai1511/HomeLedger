@@ -691,3 +691,97 @@ select.input {
   text-align: center;
   padding: 20px 0;
 }
+
+/* Mobile-first optimizations */
+@media (max-width: 576px) {
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .projectName {
+    font-size: 0.95rem;
+  }
+  
+  .projectCard {
+    padding: 14px;
+    gap: 12px;
+  }
+  
+  .overviewCard,
+  .actionCard,
+  .formCard {
+    padding: 14px;
+  }
+  
+  .reportSectionHeader {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+  }
+  
+  .cardTitle {
+    font-size: 1.05rem;
+  }
+  
+  .reportSubCard {
+    padding: 12px;
+    gap: 10px;
+  }
+  
+  .subCardTitle {
+    font-size: 0.78rem;
+    margin-bottom: 2px;
+  }
+  
+  .statVal {
+    font-size: 1.05rem;
+  }
+  
+  .profitBox {
+    padding: 10px;
+    gap: 4px;
+  }
+  
+  .profitBoxLabel {
+    font-size: 0.72rem;
+  }
+  
+  .profitBoxVal {
+    font-size: 1.1rem;
+  }
+  
+  .dataListItem {
+    padding: 10px;
+  }
+  
+  .dataListDesc {
+    font-size: 0.8rem;
+  }
+  
+  .dataListAmtPositive,
+  .dataListAmtNegative {
+    font-size: 0.85rem;
+  }
+
+  .formRow {
+    gap: 10px;
+  }
+
+  .input {
+    padding: 8px 12px;
+    font-size: 0.88rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .statVal {
+    font-size: 0.95rem;
+  }
+  
+  .profitBoxVal {
+    font-size: 0.98rem;
+  }
+  
+  .progressBarBg {
+    height: 4px;
+  }
+}
