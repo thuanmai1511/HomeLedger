@@ -695,6 +695,7 @@ export function StoreProvider({ children }) {
             delete copy.roundsData;
             delete copy.totalShares;
             delete copy.startDate;
+            delete copy.frequency;
             return copy;
           });
           promises.push(supabase.from('huis').delete().neq('id', '').then(() => supabase.from('huis').insert(dbH)));
@@ -731,6 +732,7 @@ export function StoreProvider({ children }) {
       delete dbH.roundsData;
       delete dbH.totalShares;
       delete dbH.startDate;
+      delete dbH.frequency;
       const { error } = await supabase.from('huis').insert(dbH);
       if (error) {
         console.error("Lỗi khi thêm dây hụi vào Supabase:", error);
@@ -756,6 +758,7 @@ export function StoreProvider({ children }) {
       delete dbH.roundsData;
       delete dbH.totalShares;
       delete dbH.startDate;
+      delete dbH.frequency;
       const { error } = await supabase.from('huis').update(dbH).eq('id', updatedH.id);
       if (error) {
         console.error("Lỗi khi cập nhật dây hụi trên Supabase:", error);
