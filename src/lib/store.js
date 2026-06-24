@@ -690,7 +690,8 @@ export function StoreProvider({ children }) {
               ...h, 
               roundsdata: h.roundsData,
               totalshares: h.totalShares,
-              startdate: h.startDate
+              startdate: h.startDate,
+              type: h.type || h.frequency || 'weekly'
             };
             delete copy.roundsData;
             delete copy.totalShares;
@@ -727,7 +728,8 @@ export function StoreProvider({ children }) {
         ...newH, 
         roundsdata: newH.roundsData,
         totalshares: newH.totalShares,
-        startdate: newH.startDate
+        startdate: newH.startDate,
+        type: newH.type || newH.frequency || 'weekly'
       };
       delete dbH.roundsData;
       delete dbH.totalShares;
@@ -753,7 +755,8 @@ export function StoreProvider({ children }) {
         ...updatedH, 
         roundsdata: updatedH.roundsData,
         totalshares: updatedH.totalShares,
-        startdate: updatedH.startDate
+        startdate: updatedH.startDate,
+        type: updatedH.type || updatedH.frequency || 'weekly'
       };
       delete dbH.roundsData;
       delete dbH.totalShares;
