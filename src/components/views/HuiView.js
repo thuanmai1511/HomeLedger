@@ -68,8 +68,7 @@ export default function HuiView() {
 
   const handleOpenPayRound = (hui, roundObj) => {
     setPayingRoundNum(roundObj.round);
-    // Suggest the base amount default
-    setRawPaidVal(new Intl.NumberFormat('vi-VN').format(hui.amount));
+    setRawPaidVal('');
   };
 
   const handleSavePayRound = (hui) => {
