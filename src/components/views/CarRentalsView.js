@@ -15,7 +15,8 @@ import {
   ChevronRight,
   Info,
   History,
-  Play
+  Play,
+  Filter
 } from 'lucide-react';
 import styles from './CarRentalsView.module.css';
 
@@ -37,6 +38,9 @@ export default function CarRentalsView() {
 
   // Trips filtering tabs: 'active' (Active/Pending) vs 'history' (Completed/Cancelled)
   const [tripTab, setTripTab] = useState('active');
+
+  // Month-by-month filter: 'all' or 'YYYY-MM'
+  const [selectedMonth, setSelectedMonth] = useState('all');
 
   // Form states
   const [vehicleForm, setVehicleForm] = useState({ name: '', licensePlate: '' });
@@ -135,27 +139,66 @@ export default function CarRentalsView() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
   };
 
-  // Stats calculation
+  // Get unique months list for dropdown filter
+  const uniqueMonths = useMemo(() => {
+    if (!carTrips) return [];
+    const monthsSet = new Set();
+    carTrips.forEach(t => {
+      if (t.startDate) {
+        monthsSet.add(t.startDate.substring(0, 7)); // YYYY-MM
+      }
+    });
+    return Array.from(monthsSet).sort().reverse(); // Latest month first
+  }, [carTrips]);
+
+  // Format Month Label helper
+  const formatMonthLabel = (yyyyMm) => {
+    const [year, month] = yyyyMm.split('-');
+    return `Tháng ${month}/${year}`;
+  };
+
+  // Stats calculation (reacting to month filter)
   const totalVehicles = vehicles ? vehicles.length : 0;
   const rentedVehicles = vehicles ? vehicles.filter(v => v.status === 'rented').length : 0;
   const availableVehicles = totalVehicles - rentedVehicles;
   
-  const activeTripsCount = carTrips ? carTrips.filter(t => t.status === 'active').length : 0;
-  const totalRevenue = carTrips
-    ? carTrips
-        .filter(t => t.status === 'completed' || t.status === 'active')
-        .reduce((sum, t) => sum + (t.amount || 0), 0)
-    : 0;
+  const activeTripsCount = useMemo(() => {
+    if (!carTrips) return 0;
+    let trips = carTrips.filter(t => t.status === 'active');
+    if (selectedMonth !== 'all') {
+      trips = trips.filter(t => t.startDate && t.startDate.startsWith(selectedMonth));
+    }
+    return trips.length;
+  }, [carTrips, selectedMonth]);
 
-  // Filtered trips based on selected tab
+  const totalRevenue = useMemo(() => {
+    if (!carTrips) return 0;
+    let trips = carTrips.filter(t => t.status === 'completed' || t.status === 'active');
+    if (selectedMonth !== 'all') {
+      trips = trips.filter(t => t.startDate && t.startDate.startsWith(selectedMonth));
+    }
+    return trips.reduce((sum, t) => sum + (t.amount || 0), 0);
+  }, [carTrips, selectedMonth]);
+
+  // Filtered trips based on selected tab and month
   const filteredTrips = useMemo(() => {
     if (!carTrips) return [];
+    let trips = carTrips;
+    
+    // Filter by tab
     if (tripTab === 'active') {
-      return carTrips.filter(t => t.status === 'active' || t.status === 'pending');
+      trips = trips.filter(t => t.status === 'active' || t.status === 'pending');
     } else {
-      return carTrips.filter(t => t.status === 'completed' || t.status === 'cancelled');
+      trips = trips.filter(t => t.status === 'completed' || t.status === 'cancelled');
     }
-  }, [carTrips, tripTab]);
+
+    // Filter by month
+    if (selectedMonth !== 'all') {
+      trips = trips.filter(t => t.startDate && t.startDate.startsWith(selectedMonth));
+    }
+
+    return trips;
+  }, [carTrips, tripTab, selectedMonth]);
 
   return (
     <div className={styles.container}>
@@ -163,7 +206,7 @@ export default function CarRentalsView() {
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>Quản lý Thuê xe</h1>
-          <p className={styles.subtitle}>Theo dõi đội xe và chuyến xe đơn giản, tối ưu trên điện thoại di động.</p>
+          <p className={styles.subtitle}>Theo dõi xe và doanh thu từng tháng, giao diện tối ưu trên di động.</p>
         </div>
         <div className={styles.actionButtons}>
           <button onClick={() => setIsAddVehicleOpen(true)} className={styles.primaryBtn}>
@@ -187,6 +230,24 @@ export default function CarRentalsView() {
         </div>
       </header>
 
+      {/* Month Filter Selector Toolbar */}
+      <section className={`${styles.filterToolbar} glass-card`}>
+        <div className={styles.filterTitle}>
+          <Filter size={16} />
+          <span>Lọc doanh thu & chuyến đi theo tháng:</span>
+        </div>
+        <select 
+          value={selectedMonth} 
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className={styles.monthSelect}
+        >
+          <option value="all">Tất cả các tháng</option>
+          {uniqueMonths.map(m => (
+            <option key={m} value={m}>{formatMonthLabel(m)}</option>
+          ))}
+        </select>
+      </section>
+
       {/* Quick Statistics Widget */}
       <section className={styles.statsGrid}>
         <div className={`${styles.statCard} glass-card`}>
@@ -204,24 +265,28 @@ export default function CarRentalsView() {
 
         <div className={`${styles.statCard} glass-card`}>
           <div className={styles.statHeader}>
-            <span className={styles.statLabel}>Đang chạy</span>
+            <span className={styles.statLabel}>
+              {selectedMonth === 'all' ? 'Đang chạy' : `Chạy trong ${formatMonthLabel(selectedMonth).toLowerCase()}`}
+            </span>
             <div className={`${styles.statIcon} ${styles.orangeIcon}`}>
               <Clock size={18} />
             </div>
           </div>
           <div className={styles.statValue}>{activeTripsCount} chuyến</div>
-          <div className={styles.statDesc}>Đang di chuyển ngoài đường</div>
+          <div className={styles.statDesc}>Số chuyến đang thực hiện</div>
         </div>
 
         <div className={`${styles.statCard} glass-card`}>
           <div className={styles.statHeader}>
-            <span className={styles.statLabel}>Doanh thu thu về</span>
+            <span className={styles.statLabel}>
+              {selectedMonth === 'all' ? 'Doanh thu thu về' : `Doanh thu ${formatMonthLabel(selectedMonth).toLowerCase()}`}
+            </span>
             <div className={`${styles.statIcon} ${styles.greenIcon}`}>
               <DollarSign size={18} />
             </div>
           </div>
           <div className={styles.statValue}>{formatVND(totalRevenue)}</div>
-          <div className={styles.statDesc}>Ước tính doanh thu</div>
+          <div className={styles.statDesc}>Tính từ chuyến Đang chạy & Hoàn thành</div>
         </div>
       </section>
 
@@ -229,7 +294,7 @@ export default function CarRentalsView() {
       <div className={styles.mainGrid}>
         
         {/* Vehicles Section */}
-        <section className={styles.sectionCard}>
+        <section className={`${styles.sectionCard} glass-card`}>
           <h2 className={styles.sectionTitle}>
             <Car size={18} />
             <span>Đội xe hiện có ({totalVehicles})</span>
@@ -278,7 +343,7 @@ export default function CarRentalsView() {
         </section>
 
         {/* Trips Section with History Tabs */}
-        <section className={styles.sectionCard}>
+        <section className={`${styles.sectionCard} glass-card`}>
           <div className={styles.sectionHeaderWithTabs}>
             <h2 className={styles.sectionTitle}>
               <Calendar size={18} />
@@ -305,7 +370,11 @@ export default function CarRentalsView() {
           {filteredTrips.length === 0 ? (
             <div className={`${styles.emptyState} glass-card`}>
               {tripTab === 'active' ? <Clock size={32} className={styles.emptyIcon} /> : <History size={32} className={styles.emptyIcon} />}
-              <p>{tripTab === 'active' ? 'Không có chuyến xe nào đang chạy hoặc sắp đi.' : 'Lịch sử thuê trống.'}</p>
+              <p>
+                {tripTab === 'active' 
+                  ? (selectedMonth === 'all' ? 'Không có chuyến xe nào đang hoạt động.' : `Không có chuyến xe nào hoạt động trong ${formatMonthLabel(selectedMonth).toLowerCase()}.`) 
+                  : 'Lịch sử thuê trống.'}
+              </p>
             </div>
           ) : (
             <div className={styles.tripsContainer}>
