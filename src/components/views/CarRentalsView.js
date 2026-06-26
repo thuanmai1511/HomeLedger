@@ -569,7 +569,7 @@ export default function CarRentalsView() {
                   const vehicle = vehicles ? vehicles.find(v => v.id === trip.vehicleId) : null;
                   return (
                     <div key={trip.id} className={`${styles.tripMobileCard} glass-card`}>
-                      <div className={tripMobileHeader}>
+                      <div className={styles.tripMobileHeader}>
                         <span className={styles.customerMobileName}>{trip.customerName}</span>
                         <span className={`${styles.tripStatusBadge} ${
                           trip.status === 'active' ? styles.tripActive :
