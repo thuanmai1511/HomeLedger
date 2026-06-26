@@ -41,9 +41,10 @@ export default function CarRentalsView() {
   // Trips filtering tabs: 'active' (Active/Pending) vs 'history' (Completed/Cancelled)
   const [tripTab, setTripTab] = useState('active');
 
-  // Search & Pagination states
+  // Search, Pagination, & Vehicle Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [displayLimit, setDisplayLimit] = useState(5); // Default display 5 items for performance & mobile scrolling
+  const [selectedVehicleFilter, setSelectedVehicleFilter] = useState('all'); // Filter trips by clicking a vehicle card
 
   // Month-by-month filter: 'all' or 'YYYY-MM'
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -140,6 +141,11 @@ export default function CarRentalsView() {
     });
   };
 
+  const handleVehicleCardClick = (id) => {
+    setSelectedVehicleFilter(prev => prev === id ? 'all' : id);
+    setDisplayLimit(5); // Reset limit to prevent layout jump
+  };
+
   // Format currency VND helper
   const formatVND = (value) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
@@ -166,7 +172,7 @@ export default function CarRentalsView() {
   // Reset display limit when changing tabs or filters
   const handleTabChange = (newTab) => {
     setTripTab(newTab);
-    setDisplayLimit(5); // Reset limit to prevent layout jump
+    setDisplayLimit(5);
   };
 
   const handleMonthChange = (e) => {
@@ -174,7 +180,7 @@ export default function CarRentalsView() {
     setDisplayLimit(5);
   };
 
-  // Stats calculation (reacting to month filter)
+  // Stats calculation (reacting to month filter and vehicle filter)
   const totalVehicles = vehicles ? vehicles.length : 0;
   const rentedVehicles = vehicles ? vehicles.filter(v => v.status === 'rented').length : 0;
   const availableVehicles = totalVehicles - rentedVehicles;
@@ -185,8 +191,11 @@ export default function CarRentalsView() {
     if (selectedMonth !== 'all') {
       trips = trips.filter(t => t.startDate && t.startDate.startsWith(selectedMonth));
     }
+    if (selectedVehicleFilter !== 'all') {
+      trips = trips.filter(t => t.vehicleId === selectedVehicleFilter);
+    }
     return trips.length;
-  }, [carTrips, selectedMonth]);
+  }, [carTrips, selectedMonth, selectedVehicleFilter]);
 
   const totalRevenue = useMemo(() => {
     if (!carTrips) return 0;
@@ -194,10 +203,13 @@ export default function CarRentalsView() {
     if (selectedMonth !== 'all') {
       trips = trips.filter(t => t.startDate && t.startDate.startsWith(selectedMonth));
     }
+    if (selectedVehicleFilter !== 'all') {
+      trips = trips.filter(t => t.vehicleId === selectedVehicleFilter);
+    }
     return trips.reduce((sum, t) => sum + (t.amount || 0), 0);
-  }, [carTrips, selectedMonth]);
+  }, [carTrips, selectedMonth, selectedVehicleFilter]);
 
-  // Filtered and searched trips based on selected tab, month, and search query
+  // Filtered and searched trips based on selected tab, month, vehicle filter, and search query
   const filteredAndSearchedTrips = useMemo(() => {
     if (!carTrips) return [];
     let trips = carTrips;
@@ -214,7 +226,12 @@ export default function CarRentalsView() {
       trips = trips.filter(t => t.startDate && t.startDate.startsWith(selectedMonth));
     }
 
-    // 3. Filter by Search Query (Customer Name or License Plate)
+    // 3. Filter by Selected Vehicle Card Click
+    if (selectedVehicleFilter !== 'all') {
+      trips = trips.filter(t => t.vehicleId === selectedVehicleFilter);
+    }
+
+    // 4. Filter by Search Query (Customer Name or License Plate)
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase().trim();
       trips = trips.filter(t => {
@@ -229,7 +246,7 @@ export default function CarRentalsView() {
     }
 
     return trips;
-  }, [carTrips, tripTab, selectedMonth, searchQuery, vehicles]);
+  }, [carTrips, tripTab, selectedMonth, selectedVehicleFilter, searchQuery, vehicles]);
 
   // Paginated/limited trips for actual rendering
   const displayedTrips = useMemo(() => {
@@ -237,6 +254,13 @@ export default function CarRentalsView() {
   }, [filteredAndSearchedTrips, displayLimit]);
 
   const hasMoreTrips = filteredAndSearchedTrips.length > displayLimit;
+
+  // Find currently selected vehicle name for visual filter indicators
+  const selectedVehicleName = useMemo(() => {
+    if (selectedVehicleFilter === 'all') return '';
+    const v = vehicles ? vehicles.find(x => x.id === selectedVehicleFilter) : null;
+    return v ? `${v.name} (${v.licenseplate})` : '';
+  }, [vehicles, selectedVehicleFilter]);
 
   return (
     <div className={styles.container}>
@@ -337,6 +361,7 @@ export default function CarRentalsView() {
             <Car size={18} />
             <span>Đội xe hiện có ({totalVehicles})</span>
           </h2>
+          <p className={styles.helperText}>Bấm vào xe để xem nhanh danh sách chuyến xe của riêng xe đó.</p>
 
           {!vehicles || vehicles.length === 0 ? (
             <div className={`${styles.emptyState} glass-card`}>
@@ -348,8 +373,13 @@ export default function CarRentalsView() {
             <div className={styles.vehiclesList}>
               {vehicles.map((vehicle) => {
                 const isRented = vehicle.status === 'rented';
+                const isSelected = selectedVehicleFilter === vehicle.id;
                 return (
-                  <div key={vehicle.id} className={`${styles.vehicleCard} glass-card`}>
+                  <div 
+                    key={vehicle.id} 
+                    className={`${styles.vehicleCard} glass-card ${isSelected ? styles.selectedVehicleCard : ''}`}
+                    onClick={() => handleVehicleCardClick(vehicle.id)}
+                  >
                     <div className={styles.vehicleInfo}>
                       <h3 className={styles.vehicleName}>{vehicle.name}</h3>
                       <p className={styles.licensePlate}>
@@ -362,9 +392,11 @@ export default function CarRentalsView() {
                         {isRented ? 'Đang thuê' : 'Sẵn sàng'}
                       </span>
                       <button 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation(); // Avoid triggering card click filter
                           if (confirm(`Bạn chắc chắn muốn xóa xe ${vehicle.name}? Toàn bộ lịch sử chuyến đi của xe này cũng sẽ bị xóa.`)) {
                             deleteVehicle(vehicle.id);
+                            if (isSelected) setSelectedVehicleFilter('all');
                           }
                         }} 
                         className={styles.deleteBtn}
@@ -404,6 +436,14 @@ export default function CarRentalsView() {
               </button>
             </div>
           </div>
+
+          {/* Active vehicle filter pill */}
+          {selectedVehicleFilter !== 'all' && (
+            <div className={styles.filterPill}>
+              <span>Chỉ xem xe: <strong>{selectedVehicleName}</strong></span>
+              <button onClick={() => setSelectedVehicleFilter('all')} className={styles.clearPillBtn}>×</button>
+            </div>
+          )}
 
           {/* Search Bar Widget */}
           <div className={styles.searchBarWrapper}>
@@ -529,7 +569,7 @@ export default function CarRentalsView() {
                   const vehicle = vehicles ? vehicles.find(v => v.id === trip.vehicleId) : null;
                   return (
                     <div key={trip.id} className={`${styles.tripMobileCard} glass-card`}>
-                      <div className={styles.tripMobileHeader}>
+                      <div className={tripMobileHeader}>
                         <span className={styles.customerMobileName}>{trip.customerName}</span>
                         <span className={`${styles.tripStatusBadge} ${
                           trip.status === 'active' ? styles.tripActive :
