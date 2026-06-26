@@ -577,3 +577,188 @@
   gap: 0.75rem;
   margin-top: 1.5rem;
 }
+
+/* Tab styles for active vs history trips */
+.sectionHeaderWithTabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.tabGroup {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.tabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.tabBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tabBtnActive {
+  background: var(--primary);
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Mobile responsive adjustments */
+.mobileTripsList {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .tableResponsive {
+    display: none; /* Hide large desktop table */
+  }
+
+  .mobileTripsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .tripMobileCard {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    transition: transform 0.2s ease;
+  }
+
+  .tripMobileCard:active {
+    transform: scale(0.98);
+  }
+
+  .tripMobileHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.6rem;
+  }
+
+  .customerMobileName {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+  }
+
+  .tripMobileBody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .infoRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+  }
+
+  .infoLabel {
+    color: var(--text-secondary);
+  }
+
+  .infoVal {
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: right;
+  }
+
+  .moneyText {
+    color: #10b981;
+    font-weight: 700;
+  }
+
+  .tripMobileFooter {
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.6rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .mobileActionsGroup {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .mobileActionBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .mobileSuccessBtn {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+
+  .mobileSuccessBtn:active {
+    background: rgba(16, 185, 129, 0.2);
+  }
+
+  .mobileDangerBtn {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+
+  .mobileDangerBtn:active {
+    background: rgba(239, 68, 68, 0.2);
+  }
+
+  .mobileDeleteBtn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+  }
+
+  .mobileDeleteBtn:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Optimize layout header buttons on small screens */
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actionButtons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+}
+

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStore } from '@/lib/store';
 import { 
   Car, 
@@ -11,10 +11,11 @@ import {
   CheckCircle, 
   XCircle, 
   Clock, 
-  AlertCircle,
   Hash,
   ChevronRight,
-  Info
+  Info,
+  History,
+  Play
 } from 'lucide-react';
 import styles from './CarRentalsView.module.css';
 
@@ -34,6 +35,9 @@ export default function CarRentalsView() {
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
   const [isAddTripOpen, setIsAddTripOpen] = useState(false);
 
+  // Trips filtering tabs: 'active' (Active/Pending) vs 'history' (Completed/Cancelled)
+  const [tripTab, setTripTab] = useState('active');
+
   // Form states
   const [vehicleForm, setVehicleForm] = useState({ name: '', licensePlate: '' });
   const [tripForm, setTripForm] = useState({
@@ -41,10 +45,21 @@ export default function CarRentalsView() {
     customerName: '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    amount: ''
   });
+  const [rawAmount, setRawAmount] = useState(''); // Formatted amount for display in input
 
-  // Calculate days helper for form
+  // Formatting helper for amount input
+  const formatNumberString = (val) => {
+    const clean = val.replace(/\D/g, '');
+    if (!clean) return '';
+    return new Intl.NumberFormat('vi-VN').format(Number(clean));
+  };
+
+  const handleAmountChange = (e) => {
+    setRawAmount(formatNumberString(e.target.value));
+  };
+
+  // Calculate days helper
   const calculateDays = (startStr, endStr) => {
     if (!startStr || !endStr) return 0;
     const start = new Date(startStr);
@@ -52,7 +67,6 @@ export default function CarRentalsView() {
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
     const diffTime = end - start;
     if (diffTime < 0) return 0;
-    // Count days (minimum 1 day)
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays === 0 ? 1 : diffDays;
   };
@@ -73,11 +87,11 @@ export default function CarRentalsView() {
 
   const handleAddTripSubmit = (e) => {
     e.preventDefault();
-    const { vehicleId, customerName, startDate, endDate, amount } = tripForm;
+    const { vehicleId, customerName, startDate, endDate } = tripForm;
     if (!vehicleId || !customerName.trim() || !startDate || !endDate) return;
 
     const days = calculateDays(startDate, endDate);
-    const calculatedAmount = Number(amount) || 0;
+    const numericAmount = Number(rawAmount.replace(/\./g, '')) || 0;
 
     // Set trip status based on dates
     const todayStr = new Date().toISOString().split('T')[0];
@@ -94,7 +108,7 @@ export default function CarRentalsView() {
       startDate,
       endDate,
       days,
-      amount: calculatedAmount,
+      amount: numericAmount,
       status
     });
 
@@ -104,8 +118,8 @@ export default function CarRentalsView() {
       customerName: '',
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      amount: ''
     });
+    setRawAmount('');
     setIsAddTripOpen(false);
   };
 
@@ -121,7 +135,7 @@ export default function CarRentalsView() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
   };
 
-  // Statistics
+  // Stats calculation
   const totalVehicles = vehicles ? vehicles.length : 0;
   const rentedVehicles = vehicles ? vehicles.filter(v => v.status === 'rented').length : 0;
   const availableVehicles = totalVehicles - rentedVehicles;
@@ -133,18 +147,28 @@ export default function CarRentalsView() {
         .reduce((sum, t) => sum + (t.amount || 0), 0)
     : 0;
 
+  // Filtered trips based on selected tab
+  const filteredTrips = useMemo(() => {
+    if (!carTrips) return [];
+    if (tripTab === 'active') {
+      return carTrips.filter(t => t.status === 'active' || t.status === 'pending');
+    } else {
+      return carTrips.filter(t => t.status === 'completed' || t.status === 'cancelled');
+    }
+  }, [carTrips, tripTab]);
+
   return (
     <div className={styles.container}>
       {/* Header */}
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Quản lý Cho thuê xe 4 bánh</h1>
-          <p className={styles.subtitle}>Quản lý danh sách xe tự lái, theo dõi các chuyến đi và doanh thu độc lập.</p>
+          <h1 className={styles.title}>Quản lý Thuê xe</h1>
+          <p className={styles.subtitle}>Theo dõi đội xe và chuyến xe đơn giản, tối ưu trên điện thoại di động.</p>
         </div>
         <div className={styles.actionButtons}>
           <button onClick={() => setIsAddVehicleOpen(true)} className={styles.primaryBtn}>
             <Plus size={18} />
-            <span>Thêm xe mới</span>
+            <span>Thêm xe</span>
           </button>
           <button 
             onClick={() => {
@@ -158,7 +182,7 @@ export default function CarRentalsView() {
             className={styles.secondaryBtn}
           >
             <Plus size={18} />
-            <span>Tạo chuyến đi</span>
+            <span>Tạo chuyến</span>
           </button>
         </div>
       </header>
@@ -167,55 +191,55 @@ export default function CarRentalsView() {
       <section className={styles.statsGrid}>
         <div className={`${styles.statCard} glass-card`}>
           <div className={styles.statHeader}>
-            <span className={styles.statLabel}>Tổng số xe</span>
+            <span className={styles.statLabel}>Đội xe</span>
             <div className={`${styles.statIcon} ${styles.blueIcon}`}>
-              <Car size={20} />
+              <Car size={18} />
             </div>
           </div>
           <div className={styles.statValue}>{totalVehicles} xe</div>
           <div className={styles.statDesc}>
-            <span className={styles.availableText}>{availableVehicles} trống</span> • <span className={styles.rentedText}>{rentedVehicles} đang thuê</span>
+            <span className={styles.availableText}>{availableVehicles} trống</span> • <span className={styles.rentedText}>{rentedVehicles} bận</span>
           </div>
         </div>
 
         <div className={`${styles.statCard} glass-card`}>
           <div className={styles.statHeader}>
-            <span className={styles.statLabel}>Chuyến đang chạy</span>
+            <span className={styles.statLabel}>Đang chạy</span>
             <div className={`${styles.statIcon} ${styles.orangeIcon}`}>
-              <Clock size={20} />
+              <Clock size={18} />
             </div>
           </div>
           <div className={styles.statValue}>{activeTripsCount} chuyến</div>
-          <div className={styles.statDesc}>Đang phục vụ khách hàng</div>
+          <div className={styles.statDesc}>Đang di chuyển ngoài đường</div>
         </div>
 
         <div className={`${styles.statCard} glass-card`}>
           <div className={styles.statHeader}>
-            <span className={styles.statLabel}>Doanh thu ước tính</span>
+            <span className={styles.statLabel}>Doanh thu thu về</span>
             <div className={`${styles.statIcon} ${styles.greenIcon}`}>
-              <DollarSign size={20} />
+              <DollarSign size={18} />
             </div>
           </div>
           <div className={styles.statValue}>{formatVND(totalRevenue)}</div>
-          <div className={styles.statDesc}>Tính từ chuyến Đang chạy & Hoàn thành</div>
+          <div className={styles.statDesc}>Ước tính doanh thu</div>
         </div>
       </section>
 
-      {/* Main Content Grid */}
+      {/* Main Grid Layout */}
       <div className={styles.mainGrid}>
         
         {/* Vehicles Section */}
         <section className={styles.sectionCard}>
           <h2 className={styles.sectionTitle}>
-            <Car size={20} />
-            <span>Đội xe ({totalVehicles})</span>
+            <Car size={18} />
+            <span>Đội xe hiện có ({totalVehicles})</span>
           </h2>
 
           {!vehicles || vehicles.length === 0 ? (
             <div className={`${styles.emptyState} glass-card`}>
-              <Car size={36} className={styles.emptyIcon} />
-              <p>Chưa có xe nào trong danh sách.</p>
-              <button onClick={() => setIsAddVehicleOpen(true)} className={styles.inlineBtn}>Thêm xe ngay</button>
+              <Car size={32} className={styles.emptyIcon} />
+              <p>Chưa có xe nào.</p>
+              <button onClick={() => setIsAddVehicleOpen(true)} className={styles.inlineBtn}>Thêm ngay</button>
             </div>
           ) : (
             <div className={styles.vehiclesList}>
@@ -226,13 +250,13 @@ export default function CarRentalsView() {
                     <div className={styles.vehicleInfo}>
                       <h3 className={styles.vehicleName}>{vehicle.name}</h3>
                       <p className={styles.licensePlate}>
-                        <Hash size={14} />
+                        <Hash size={12} />
                         <span>{vehicle.licenseplate}</span>
                       </p>
                     </div>
                     <div className={styles.vehicleFooter}>
                       <span className={`${styles.statusBadge} ${isRented ? styles.badgeRented : styles.badgeAvailable}`}>
-                        {isRented ? 'Đang thuê' : 'Đang trống'}
+                        {isRented ? 'Đang thuê' : 'Sẵn sàng'}
                       </span>
                       <button 
                         onClick={() => {
@@ -253,20 +277,40 @@ export default function CarRentalsView() {
           )}
         </section>
 
-        {/* Trips Section */}
+        {/* Trips Section with History Tabs */}
         <section className={styles.sectionCard}>
-          <h2 className={styles.sectionTitle}>
-            <Calendar size={20} />
-            <span>Danh sách chuyến xe ({carTrips ? carTrips.length : 0})</span>
-          </h2>
+          <div className={styles.sectionHeaderWithTabs}>
+            <h2 className={styles.sectionTitle}>
+              <Calendar size={18} />
+              <span>Chuyến xe ({filteredTrips.length})</span>
+            </h2>
+            <div className={styles.tabGroup}>
+              <button 
+                onClick={() => setTripTab('active')} 
+                className={`${styles.tabBtn} ${tripTab === 'active' ? styles.tabBtnActive : ''}`}
+              >
+                <Play size={14} />
+                <span>Chuyến đi</span>
+              </button>
+              <button 
+                onClick={() => setTripTab('history')} 
+                className={`${styles.tabBtn} ${tripTab === 'history' ? styles.tabBtnActive : ''}`}
+              >
+                <History size={14} />
+                <span>Lịch sử</span>
+              </button>
+            </div>
+          </div>
 
-          {!carTrips || carTrips.length === 0 ? (
+          {filteredTrips.length === 0 ? (
             <div className={`${styles.emptyState} glass-card`}>
-              <Calendar size={36} className={styles.emptyIcon} />
-              <p>Chưa ghi nhận chuyến xe nào.</p>
+              {tripTab === 'active' ? <Clock size={32} className={styles.emptyIcon} /> : <History size={32} className={styles.emptyIcon} />}
+              <p>{tripTab === 'active' ? 'Không có chuyến xe nào đang chạy hoặc sắp đi.' : 'Lịch sử thuê trống.'}</p>
             </div>
           ) : (
             <div className={styles.tripsContainer}>
+              
+              {/* DESKTOP TABLE VIEW */}
               <div className={styles.tableResponsive}>
                 <table className={styles.tripsTable}>
                   <thead>
@@ -281,13 +325,11 @@ export default function CarRentalsView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {carTrips.map((trip) => {
+                    {filteredTrips.map((trip) => {
                       const vehicle = vehicles ? vehicles.find(v => v.id === trip.vehicleId) : null;
                       return (
                         <tr key={trip.id} className={styles.tripRow}>
-                          <td>
-                            <span className={styles.customerName}>{trip.customerName}</span>
-                          </td>
+                          <td><span className={styles.customerName}>{trip.customerName}</span></td>
                           <td>
                             {vehicle ? (
                               <div className={styles.vehicleCell}>
@@ -295,7 +337,7 @@ export default function CarRentalsView() {
                                 <span className={styles.cellLicensePlate}>{vehicle.licenseplate}</span>
                               </div>
                             ) : (
-                              <span className={styles.deletedVehicle}>Xe đã bị xóa</span>
+                              <span className={styles.deletedVehicle}>Xe đã xóa</span>
                             )}
                           </td>
                           <td>
@@ -326,7 +368,7 @@ export default function CarRentalsView() {
                                   <button 
                                     onClick={() => handleQuickStatusChange(trip, 'completed')} 
                                     className={`${styles.iconActionBtn} ${styles.successBtn}`}
-                                    title="Hoàn thành chuyến"
+                                    title="Hoàn thành"
                                   >
                                     <CheckCircle size={15} />
                                   </button>
@@ -341,7 +383,7 @@ export default function CarRentalsView() {
                               )}
                               <button 
                                 onClick={() => {
-                                  if (confirm("Xóa lịch sử chuyến xe này?")) {
+                                  if (confirm("Xóa lịch sử chuyến này?")) {
                                     deleteCarTrip(trip.id);
                                   }
                                 }} 
@@ -358,6 +400,86 @@ export default function CarRentalsView() {
                   </tbody>
                 </table>
               </div>
+
+              {/* MOBILE CARD VIEW */}
+              <div className={styles.mobileTripsList}>
+                {filteredTrips.map((trip) => {
+                  const vehicle = vehicles ? vehicles.find(v => v.id === trip.vehicleId) : null;
+                  return (
+                    <div key={trip.id} className={`${styles.tripMobileCard} glass-card`}>
+                      <div className={styles.tripMobileHeader}>
+                        <span className={styles.customerMobileName}>{trip.customerName}</span>
+                        <span className={`${styles.tripStatusBadge} ${
+                          trip.status === 'active' ? styles.tripActive :
+                          trip.status === 'completed' ? styles.tripCompleted :
+                          trip.status === 'cancelled' ? styles.tripCancelled : styles.tripPending
+                        }`}>
+                          {trip.status === 'active' && 'Đang chạy'}
+                          {trip.status === 'completed' && 'Đã xong'}
+                          {trip.status === 'cancelled' && 'Đã hủy'}
+                          {trip.status === 'pending' && 'Sắp đi'}
+                        </span>
+                      </div>
+                      
+                      <div className={styles.tripMobileBody}>
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Xe thuê:</span>
+                          <span className={styles.infoVal}>
+                            {vehicle ? `${vehicle.name} (${vehicle.licenseplate})` : 'Xe đã xóa'}
+                          </span>
+                        </div>
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Thời gian:</span>
+                          <span className={styles.infoVal}>
+                            {trip.startDate} → {trip.endDate} ({trip.days} ngày)
+                          </span>
+                        </div>
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Số tiền:</span>
+                          <span className={`${styles.infoVal} ${styles.moneyText}`}>
+                            {formatVND(trip.amount)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className={styles.tripMobileFooter}>
+                        <div className={styles.mobileActionsGroup}>
+                          {trip.status !== 'completed' && trip.status !== 'cancelled' && (
+                            <>
+                              <button 
+                                onClick={() => handleQuickStatusChange(trip, 'completed')} 
+                                className={`${styles.mobileActionBtn} ${styles.mobileSuccessBtn}`}
+                              >
+                                <CheckCircle size={14} />
+                                <span>Hoàn thành</span>
+                              </button>
+                              <button 
+                                onClick={() => handleQuickStatusChange(trip, 'cancelled')} 
+                                className={`${styles.mobileActionBtn} ${styles.mobileDangerBtn}`}
+                              >
+                                <XCircle size={14} />
+                                <span>Hủy</span>
+                              </button>
+                            </>
+                          )}
+                          <button 
+                            onClick={() => {
+                              if (confirm("Xóa lịch sử chuyến này?")) {
+                                deleteCarTrip(trip.id);
+                              }
+                            }} 
+                            className={`${styles.mobileActionBtn} ${styles.mobileDeleteBtn}`}
+                          >
+                            <Trash2 size={14} />
+                            <span>Xóa</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
             </div>
           )}
         </section>
@@ -420,7 +542,7 @@ export default function CarRentalsView() {
                 >
                   {vehicles && vehicles.map(v => (
                     <option key={v.id} value={v.id}>
-                      {v.name} ({v.licenseplate}) - {v.status === 'rented' ? 'Đang bận' : 'Đang trống'}
+                      {v.name} ({v.licenseplate}) - {v.status === 'rented' ? 'Đang bận' : 'Sẵn sàng'}
                     </option>
                   ))}
                 </select>
@@ -466,10 +588,10 @@ export default function CarRentalsView() {
               <div className={styles.formGroup}>
                 <label>Số tiền thuê (Doanh thu)</label>
                 <input 
-                  type="number" 
-                  placeholder="Nhập số tiền thuê"
-                  value={tripForm.amount}
-                  onChange={(e) => setTripForm({ ...tripForm, amount: e.target.value })}
+                  type="text" 
+                  placeholder="Ví dụ: 1.200.000"
+                  value={rawAmount}
+                  onChange={handleAmountChange}
                   required
                 />
               </div>
