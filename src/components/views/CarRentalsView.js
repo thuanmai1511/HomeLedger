@@ -16,7 +16,9 @@ import {
   Info,
   History,
   Play,
-  Filter
+  Filter,
+  Search,
+  ChevronDown
 } from 'lucide-react';
 import styles from './CarRentalsView.module.css';
 
@@ -38,6 +40,10 @@ export default function CarRentalsView() {
 
   // Trips filtering tabs: 'active' (Active/Pending) vs 'history' (Completed/Cancelled)
   const [tripTab, setTripTab] = useState('active');
+
+  // Search & Pagination states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [displayLimit, setDisplayLimit] = useState(5); // Default display 5 items for performance & mobile scrolling
 
   // Month-by-month filter: 'all' or 'YYYY-MM'
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -157,6 +163,17 @@ export default function CarRentalsView() {
     return `Tháng ${month}/${year}`;
   };
 
+  // Reset display limit when changing tabs or filters
+  const handleTabChange = (newTab) => {
+    setTripTab(newTab);
+    setDisplayLimit(5); // Reset limit to prevent layout jump
+  };
+
+  const handleMonthChange = (e) => {
+    setSelectedMonth(e.target.value);
+    setDisplayLimit(5);
+  };
+
   // Stats calculation (reacting to month filter)
   const totalVehicles = vehicles ? vehicles.length : 0;
   const rentedVehicles = vehicles ? vehicles.filter(v => v.status === 'rented').length : 0;
@@ -180,25 +197,46 @@ export default function CarRentalsView() {
     return trips.reduce((sum, t) => sum + (t.amount || 0), 0);
   }, [carTrips, selectedMonth]);
 
-  // Filtered trips based on selected tab and month
-  const filteredTrips = useMemo(() => {
+  // Filtered and searched trips based on selected tab, month, and search query
+  const filteredAndSearchedTrips = useMemo(() => {
     if (!carTrips) return [];
     let trips = carTrips;
     
-    // Filter by tab
+    // 1. Filter by Tab (Active/Pending vs History)
     if (tripTab === 'active') {
       trips = trips.filter(t => t.status === 'active' || t.status === 'pending');
     } else {
       trips = trips.filter(t => t.status === 'completed' || t.status === 'cancelled');
     }
 
-    // Filter by month
+    // 2. Filter by Month Select
     if (selectedMonth !== 'all') {
       trips = trips.filter(t => t.startDate && t.startDate.startsWith(selectedMonth));
     }
 
+    // 3. Filter by Search Query (Customer Name or License Plate)
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase().trim();
+      trips = trips.filter(t => {
+        const vehicle = vehicles ? vehicles.find(v => v.id === t.vehicleId) : null;
+        const vehicleMatch = vehicle ? (
+          vehicle.name.toLowerCase().includes(query) || 
+          vehicle.licenseplate.toLowerCase().includes(query)
+        ) : false;
+        const customerMatch = t.customerName.toLowerCase().includes(query);
+        return customerMatch || vehicleMatch;
+      });
+    }
+
     return trips;
-  }, [carTrips, tripTab, selectedMonth]);
+  }, [carTrips, tripTab, selectedMonth, searchQuery, vehicles]);
+
+  // Paginated/limited trips for actual rendering
+  const displayedTrips = useMemo(() => {
+    return filteredAndSearchedTrips.slice(0, displayLimit);
+  }, [filteredAndSearchedTrips, displayLimit]);
+
+  const hasMoreTrips = filteredAndSearchedTrips.length > displayLimit;
 
   return (
     <div className={styles.container}>
@@ -206,7 +244,7 @@ export default function CarRentalsView() {
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>Quản lý Thuê xe</h1>
-          <p className={styles.subtitle}>Theo dõi xe và doanh thu từng tháng, giao diện tối ưu trên di động.</p>
+          <p className={styles.subtitle}>Giao diện tối ưu cuộn trang và tìm kiếm nhanh khi danh sách dữ liệu lớn.</p>
         </div>
         <div className={styles.actionButtons}>
           <button onClick={() => setIsAddVehicleOpen(true)} className={styles.primaryBtn}>
@@ -238,7 +276,7 @@ export default function CarRentalsView() {
         </div>
         <select 
           value={selectedMonth} 
-          onChange={(e) => setSelectedMonth(e.target.value)}
+          onChange={handleMonthChange}
           className={styles.monthSelect}
         >
           <option value="all">Tất cả các tháng</option>
@@ -342,23 +380,23 @@ export default function CarRentalsView() {
           )}
         </section>
 
-        {/* Trips Section with History Tabs */}
+        {/* Trips Section with History Tabs & Search/Limit */}
         <section className={`${styles.sectionCard} glass-card`}>
           <div className={styles.sectionHeaderWithTabs}>
             <h2 className={styles.sectionTitle}>
               <Calendar size={18} />
-              <span>Chuyến xe ({filteredTrips.length})</span>
+              <span>Chuyến xe ({filteredAndSearchedTrips.length})</span>
             </h2>
             <div className={styles.tabGroup}>
               <button 
-                onClick={() => setTripTab('active')} 
+                onClick={() => handleTabChange('active')} 
                 className={`${styles.tabBtn} ${tripTab === 'active' ? styles.tabBtnActive : ''}`}
               >
                 <Play size={14} />
                 <span>Chuyến đi</span>
               </button>
               <button 
-                onClick={() => setTripTab('history')} 
+                onClick={() => handleTabChange('history')} 
                 className={`${styles.tabBtn} ${tripTab === 'history' ? styles.tabBtnActive : ''}`}
               >
                 <History size={14} />
@@ -367,13 +405,28 @@ export default function CarRentalsView() {
             </div>
           </div>
 
-          {filteredTrips.length === 0 ? (
+          {/* Search Bar Widget */}
+          <div className={styles.searchBarWrapper}>
+            <Search size={16} className={styles.searchIcon} />
+            <input 
+              type="text" 
+              placeholder="Tìm theo tên khách hoặc biển số xe..." 
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setDisplayLimit(5); // Reset display limit on new search
+              }}
+              className={styles.searchInput}
+            />
+          </div>
+
+          {filteredAndSearchedTrips.length === 0 ? (
             <div className={`${styles.emptyState} glass-card`}>
-              {tripTab === 'active' ? <Clock size={32} className={styles.emptyIcon} /> : <History size={32} className={styles.emptyIcon} />}
+              {searchQuery.trim() !== '' ? <Search size={32} className={styles.emptyIcon} /> : (tripTab === 'active' ? <Clock size={32} className={styles.emptyIcon} /> : <History size={32} className={styles.emptyIcon} />)}
               <p>
-                {tripTab === 'active' 
-                  ? (selectedMonth === 'all' ? 'Không có chuyến xe nào đang hoạt động.' : `Không có chuyến xe nào hoạt động trong ${formatMonthLabel(selectedMonth).toLowerCase()}.`) 
-                  : 'Lịch sử thuê trống.'}
+                {searchQuery.trim() !== '' 
+                  ? 'Không tìm thấy chuyến xe khớp với từ khóa.' 
+                  : (tripTab === 'active' ? 'Không có chuyến xe nào đang hoạt động.' : 'Lịch sử thuê trống.')}
               </p>
             </div>
           ) : (
@@ -394,7 +447,7 @@ export default function CarRentalsView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTrips.map((trip) => {
+                    {displayedTrips.map((trip) => {
                       const vehicle = vehicles ? vehicles.find(v => v.id === trip.vehicleId) : null;
                       return (
                         <tr key={trip.id} className={styles.tripRow}>
@@ -472,7 +525,7 @@ export default function CarRentalsView() {
 
               {/* MOBILE CARD VIEW */}
               <div className={styles.mobileTripsList}>
-                {filteredTrips.map((trip) => {
+                {displayedTrips.map((trip) => {
                   const vehicle = vehicles ? vehicles.find(v => v.id === trip.vehicleId) : null;
                   return (
                     <div key={trip.id} className={`${styles.tripMobileCard} glass-card`}>
@@ -548,6 +601,19 @@ export default function CarRentalsView() {
                   );
                 })}
               </div>
+
+              {/* Load More Button */}
+              {hasMoreTrips && (
+                <div className={styles.loadMoreContainer}>
+                  <button 
+                    onClick={() => setDisplayLimit(prev => prev + 5)} 
+                    className={styles.loadMoreBtn}
+                  >
+                    <span>Xem thêm chuyến xe</span>
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
+              )}
 
             </div>
           )}
