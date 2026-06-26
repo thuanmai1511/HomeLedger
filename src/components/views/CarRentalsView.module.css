@@ -479,11 +479,11 @@
 .modal {
   width: 100%;
   max-width: 480px;
-  background: #18181b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   animation: slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -494,7 +494,7 @@
 
 .modalHeader {
   padding: 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -538,8 +538,8 @@
 }
 
 .formGroup input, .formGroup select {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   padding: 0.65rem 0.8rem;
   border-radius: 6px;
   color: var(--text-primary);
