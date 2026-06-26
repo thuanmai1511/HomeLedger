@@ -13,6 +13,7 @@ import SettingsView from '@/components/views/SettingsView';
 import DebtsView from '@/components/views/DebtsView';
 import HuiView from '@/components/views/HuiView';
 import ProjectsView from '@/components/views/ProjectsView';
+import CarRentalsView from '@/components/views/CarRentalsView';
 import TransactionModal from '@/components/TransactionModal';
 import styles from './page.module.css';
 
@@ -72,6 +73,8 @@ export default function Home() {
         return <HuiView />;
       case 'projects':
         return <ProjectsView />;
+      case 'car-rentals':
+        return <CarRentalsView />;
       case 'settings':
         return <SettingsView />;
       default:

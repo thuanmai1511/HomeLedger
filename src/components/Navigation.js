@@ -17,13 +17,14 @@ import {
   MoreHorizontal,
   X,
   Notebook,
-  Briefcase
+  Briefcase,
+  Car
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import styles from './Navigation.module.css';
 
 export default function Navigation({ activeTab, setActiveTab, onOpenAddTransaction }) {
-  const { theme, toggleTheme, members, contractorMode } = useStore();
+  const { theme, toggleTheme, members, contractorMode, carRentalMode } = useStore();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const navItems = [
@@ -36,6 +37,7 @@ export default function Navigation({ activeTab, setActiveTab, onOpenAddTransacti
     { id: 'debts', label: 'Khoản nợ', icon: Coins },
     { id: 'huis', label: 'Dây Hụi', icon: Notebook },
     ...(contractorMode ? [{ id: 'projects', label: 'Công trình', icon: Briefcase }] : []),
+    ...(carRentalMode ? [{ id: 'car-rentals', label: 'Thuê xe 4 bánh', icon: Car }] : []),
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
 
@@ -55,6 +57,7 @@ export default function Navigation({ activeTab, setActiveTab, onOpenAddTransacti
     { id: 'debts', label: 'Khoản nợ', icon: Coins },
     { id: 'huis', label: 'Dây Hụi', icon: Notebook },
     ...(contractorMode ? [{ id: 'projects', label: 'Công trình', icon: Briefcase }] : []),
+    ...(carRentalMode ? [{ id: 'car-rentals', label: 'Thuê xe 4 bánh', icon: Car }] : []),
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
 

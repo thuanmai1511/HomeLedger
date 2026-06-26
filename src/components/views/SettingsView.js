@@ -4,7 +4,8 @@ import React from 'react';
 import { 
   Sun, 
   Moon,
-  Briefcase
+  Briefcase,
+  Car
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import styles from './SettingsView.module.css';
@@ -14,7 +15,9 @@ export default function SettingsView() {
     theme, 
     toggleTheme,
     contractorMode,
-    toggleContractorMode
+    toggleContractorMode,
+    carRentalMode,
+    toggleCarRentalMode
   } = useStore();
 
   return (
@@ -75,6 +78,31 @@ export default function SettingsView() {
               id="contractor-btn-on"
             >
               <Briefcase size={18} />
+              <span>Hiện tính năng</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Car Rental Mode Settings */}
+        <div className={`${styles.settingCard} glass-card`}>
+          <h3 className={styles.cardTitle}>Chế độ Cho thuê xe</h3>
+          <p className={styles.cardDesc}>Bật/tắt phân hệ quản lý đội xe, chuyến đi và doanh thu cho thuê xe tự lái.</p>
+          
+          <div className={styles.themeToggleGroup}>
+            <button 
+              onClick={() => carRentalMode && toggleCarRentalMode()} 
+              className={`${styles.themeBtn} ${!carRentalMode ? styles.themeBtnActive : ''}`}
+              id="car-rental-btn-off"
+            >
+              <span>Ẩn tính năng</span>
+            </button>
+            
+            <button 
+              onClick={() => !carRentalMode && toggleCarRentalMode()} 
+              className={`${styles.themeBtn} ${carRentalMode ? styles.themeBtnActive : ''}`}
+              id="car-rental-btn-on"
+            >
+              <Car size={18} />
               <span>Hiện tính năng</span>
             </button>
           </div>

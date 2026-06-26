@@ -68,7 +68,10 @@ export function StoreProvider({ children }) {
     debts: INITIAL_DEBTS,
     huis: [],
     projects: [],
+    vehicles: [],
+    carTrips: [],
     contractorMode: false,
+    carRentalMode: false,
     theme: 'dark'
   });
   
@@ -180,11 +183,36 @@ export function StoreProvider({ children }) {
               endDate: p.enddate
             }));
           }
+          
+          let fetchedVehicles = [];
+          let fetchedCarTrips = [];
+          try {
+            const { data: vData, error: vErr } = await supabase.from('vehicles').select('*');
+            if (!vErr && vData) {
+              fetchedVehicles = vData;
+            }
+            const { data: ctData, error: ctErr } = await supabase.from('cartrips').select('*');
+            if (!ctErr && ctData) {
+              fetchedCarTrips = ctData.map(t => ({
+                id: t.id,
+                vehicleId: t.vehicleid,
+                customerName: t.customername,
+                startDate: t.startdate,
+                endDate: t.enddate,
+                days: Number(t.days) || 0,
+                amount: Number(t.amount) || 0,
+                status: t.status
+              }));
+            }
+          } catch (dbErr) {
+            console.warn("Lỗi khi tải bảng vehicles hoặc cartrips:", dbErr);
+          }
 
           const savedTheme = localStorage.getItem('hl_theme') || 'dark';
           document.documentElement.setAttribute('data-theme', savedTheme);
 
           const contractorMode = localStorage.getItem('hl_contractor_mode') === 'true';
+          const carRentalMode = localStorage.getItem('hl_car_rental_mode') === 'true';
 
           setAppState({
             members: fetchedMembers,
@@ -195,7 +223,10 @@ export function StoreProvider({ children }) {
             debts: fetchedDebts,
             huis: fetchedHuis,
             projects: fetchedProjects,
+            vehicles: fetchedVehicles,
+            carTrips: fetchedCarTrips,
             contractorMode,
+            carRentalMode,
             theme: savedTheme
           });
           setIsLoaded(true);
@@ -210,6 +241,7 @@ export function StoreProvider({ children }) {
         document.documentElement.setAttribute('data-theme', savedTheme);
 
         const contractorMode = localStorage.getItem('hl_contractor_mode') === 'true';
+        const carRentalMode = localStorage.getItem('hl_car_rental_mode') === 'true';
 
         setAppState({
           members: INITIAL_MEMBERS,
@@ -220,7 +252,10 @@ export function StoreProvider({ children }) {
           debts: INITIAL_DEBTS,
           huis: [],
           projects: [],
+          vehicles: [],
+          carTrips: [],
           contractorMode,
+          carRentalMode,
           theme: savedTheme
         });
         setIsLoaded(true);
@@ -793,6 +828,14 @@ export function StoreProvider({ children }) {
     });
   };
 
+  const toggleCarRentalMode = () => {
+    setAppState(prev => {
+      const nextMode = !prev.carRentalMode;
+      localStorage.setItem('hl_car_rental_mode', String(nextMode));
+      return { ...prev, carRentalMode: nextMode };
+    });
+  };
+
   const addProject = async (p) => {
     const newP = {
       ...p,
@@ -859,6 +902,154 @@ export function StoreProvider({ children }) {
     });
   };
 
+  const addVehicle = async (v) => {
+    const newV = { ...v, id: 'v-' + Date.now(), status: v.status || 'available' };
+    setAppState(prev => ({ ...prev, vehicles: [...prev.vehicles, newV] }));
+    if (supabase) {
+      const { error } = await supabase.from('vehicles').insert(newV);
+      if (error) console.error("Lỗi khi thêm xe vào Supabase:", error);
+    }
+  };
+
+  const updateVehicle = async (updatedV) => {
+    setAppState(prev => ({
+      ...prev,
+      vehicles: prev.vehicles.map(v => v.id === updatedV.id ? updatedV : v)
+    }));
+    if (supabase) {
+      const { error } = await supabase.from('vehicles').update(updatedV).eq('id', updatedV.id);
+      if (error) console.error("Lỗi khi cập nhật xe trên Supabase:", error);
+    }
+  };
+
+  const deleteVehicle = async (id) => {
+    setAppState(prev => ({
+      ...prev,
+      vehicles: prev.vehicles.filter(v => v.id !== id),
+      carTrips: prev.carTrips.filter(t => t.vehicleId !== id)
+    }));
+    if (supabase) {
+      const { error } = await supabase.from('vehicles').delete().eq('id', id);
+      if (error) console.error("Lỗi khi xóa xe trên Supabase:", error);
+    }
+  };
+
+  const addCarTrip = async (trip) => {
+    const newTrip = { ...trip, id: 'trip-' + Date.now(), days: Number(trip.days) || 0, amount: Number(trip.amount) || 0 };
+    
+    let vehicleIdToUpdate = trip.vehicleId;
+    let newVehicleStatus = 'available';
+
+    setAppState(prev => {
+      const updatedTrips = [...prev.carTrips, newTrip];
+      const hasActive = updatedTrips.some(t => t.vehicleId === vehicleIdToUpdate && t.status === 'active');
+      newVehicleStatus = hasActive ? 'rented' : 'available';
+
+      const updatedVehicles = prev.vehicles.map(v => 
+        v.id === vehicleIdToUpdate ? { ...v, status: newVehicleStatus } : v
+      );
+
+      return {
+        ...prev,
+        carTrips: updatedTrips,
+        vehicles: updatedVehicles
+      };
+    });
+
+    if (supabase) {
+      const dbTrip = {
+        id: newTrip.id,
+        vehicleid: newTrip.vehicleId,
+        customername: newTrip.customerName,
+        startdate: newTrip.startDate,
+        enddate: newTrip.endDate,
+        days: newTrip.days,
+        amount: newTrip.amount,
+        status: newTrip.status
+      };
+      await Promise.all([
+        supabase.from('cartrips').insert(dbTrip),
+        supabase.from('vehicles').update({ status: newVehicleStatus }).eq('id', vehicleIdToUpdate)
+      ]).catch(err => console.error("Lỗi đồng bộ Supabase khi thêm chuyến xe:", err));
+    }
+  };
+
+  const updateCarTrip = async (updatedTrip) => {
+    const formatted = { ...updatedTrip, days: Number(updatedTrip.days) || 0, amount: Number(updatedTrip.amount) || 0 };
+    
+    let vehicleIdToUpdate = formatted.vehicleId;
+    let newVehicleStatus = 'available';
+
+    setAppState(prev => {
+      const updatedTrips = prev.carTrips.map(t => t.id === formatted.id ? formatted : t);
+      const hasActive = updatedTrips.some(t => t.vehicleId === vehicleIdToUpdate && t.status === 'active');
+      newVehicleStatus = hasActive ? 'rented' : 'available';
+
+      const updatedVehicles = prev.vehicles.map(v => 
+        v.id === vehicleIdToUpdate ? { ...v, status: newVehicleStatus } : v
+      );
+
+      return {
+        ...prev,
+        carTrips: updatedTrips,
+        vehicles: updatedVehicles
+      };
+    });
+
+    if (supabase) {
+      const dbTrip = {
+        vehicleid: formatted.vehicleId,
+        customername: formatted.customerName,
+        startdate: formatted.startDate,
+        enddate: formatted.endDate,
+        days: formatted.days,
+        amount: formatted.amount,
+        status: formatted.status
+      };
+      await Promise.all([
+        supabase.from('cartrips').update(dbTrip).eq('id', formatted.id),
+        supabase.from('vehicles').update({ status: newVehicleStatus }).eq('id', vehicleIdToUpdate)
+      ]).catch(err => console.error("Lỗi đồng bộ Supabase khi cập nhật chuyến xe:", err));
+    }
+  };
+
+  const deleteCarTrip = async (id) => {
+    let vehicleIdToUpdate = null;
+    let newVehicleStatus = 'available';
+
+    setAppState(prev => {
+      const tripToDelete = prev.carTrips.find(t => t.id === id);
+      if (tripToDelete) {
+        vehicleIdToUpdate = tripToDelete.vehicleId;
+      }
+      
+      const updatedTrips = prev.carTrips.filter(t => t.id !== id);
+      const hasActive = updatedTrips.some(t => t.vehicleId === vehicleIdToUpdate && t.status === 'active');
+      newVehicleStatus = hasActive ? 'rented' : 'available';
+
+      const updatedVehicles = prev.vehicles.map(v => {
+        if (v.id === vehicleIdToUpdate) {
+          return { ...v, status: newVehicleStatus };
+        }
+        return v;
+      });
+
+      return {
+        ...prev,
+        carTrips: updatedTrips,
+        vehicles: updatedVehicles
+      };
+    });
+
+    if (supabase) {
+      const promises = [supabase.from('cartrips').delete().eq('id', id)];
+      if (vehicleIdToUpdate) {
+        promises.push(supabase.from('vehicles').update({ status: newVehicleStatus }).eq('id', vehicleIdToUpdate));
+      }
+      await Promise.all(promises).catch(err => console.error("Lỗi đồng bộ Supabase khi xóa chuyến xe:", err));
+    }
+  };
+
   return (
     <StoreContext.Provider value={{
       isLoaded,
@@ -870,7 +1061,10 @@ export function StoreProvider({ children }) {
       debts: appState.debts,
       huis: appState.huis,
       projects: appState.projects,
+      vehicles: appState.vehicles,
+      carTrips: appState.carTrips,
       contractorMode: appState.contractorMode,
+      carRentalMode: appState.carRentalMode,
       theme: appState.theme,
       toggleTheme,
       addTransaction,
@@ -893,9 +1087,16 @@ export function StoreProvider({ children }) {
       updateHui,
       deleteHui,
       toggleContractorMode,
+      toggleCarRentalMode,
       addProject,
       updateProject,
       deleteProject,
+      addVehicle,
+      updateVehicle,
+      deleteVehicle,
+      addCarTrip,
+      updateCarTrip,
+      deleteCarTrip,
       resetAllData,
       clearAllData,
       importAllData
